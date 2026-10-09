@@ -1,0 +1,2589 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DELEGADO DIGITAL - SAR DATA</title>
+    <style>
+        :root {
+            --bg-dark: #090d16;
+            --panel-bg: #131c2e;
+            --accent-green: #22c55e;
+            --accent-red: #ef4444;
+            --accent-blue: #3b82f6;
+            --accent-gold: #facc15;
+            --accent-purple: #8b5cf6;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --base-font-size: 14px;
+            --btn-padding: 5px 8px;
+            --border-radius: 6px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg-dark); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; flex-direction: column; font-size: var(--base-font-size); }
+
+        /* HEADER / MARCADOR Y SELECTOR */
+        header { background: #05080f; padding: 4px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); height: 46px; flex-shrink: 0; z-index: 10; }
+        .score-container { display: flex; align-items: center; gap: 6px; }
+        .team-label { font-weight: 800; font-size: 0.8rem; color: #fff; text-transform: uppercase; cursor: pointer; letter-spacing: 0.5px; }
+        .score-box { background: var(--panel-bg); padding: 1px 6px; border-radius: var(--border-radius); font-weight: bold; font-size: 1.1rem; color: var(--accent-gold); border: 1.5px solid var(--border-color); font-family: monospace; cursor: pointer; }
+        .timer-box { font-family: monospace; font-size: 1rem; background: var(--accent-blue); color: #fff; padding: 1px 6px; border-radius: var(--border-radius); cursor: pointer; font-weight: bold; letter-spacing: 1px; }
+
+        .top-actions { display: flex; gap: 4px; align-items: center; }
+        .btn { padding: var(--btn-padding); border-radius: var(--border-radius); border: none; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-size: 0.75rem; transition: 0.15s; }
+        .btn-green { background: var(--accent-green); color: #000; }
+        .btn-blue { background: var(--accent-blue); color: #fff; }
+        .btn-red { background: var(--accent-red); color: #fff; }
+        .btn-purple { background: var(--accent-purple); color: #fff; }
+        .btn-gold { background: var(--accent-gold); color: #000; }
+        .btn-sm { padding: 3px 6px; font-size: 0.7rem; }
+
+        /* BOTONES DE TIEMPO MUERTO EN HEADER */
+        .timeout-badge { background: #1e293b; border: 1px solid var(--border-color); color: var(--accent-gold); font-size: 0.65rem; padding: 2px 4px; border-radius: 4px; cursor: pointer; font-family: monospace; font-weight: bold; }
+        .timeout-badge:hover { background: #334155; }
+
+        /* ESTILOS PARA EL LÁPIZ DE EDICIÓN DE ETIQUETAS Y TAMAÑOS (OCULTOS POR DEFECTO) */
+        .editable-title-wrap { display: inline-flex; align-items: center; gap: 4px; position: relative; }
+        .btn-edit-label { background: none; border: none; cursor: pointer; font-size: 0.7rem; padding: 0 2px; color: var(--text-muted); transition: color 0.2s; display: none; }
+        .btn-edit-label:hover { color: var(--accent-gold); }
+        
+        /* CLASE GLOBAL PARA MOSTRAR U OCULTAR LOS CONTROLES DE TEXTO E ICONOS */
+        body.modo-ajuste-texto .btn-edit-label { display: inline-block !important; }
+
+        /* CONTENEDOR PRINCIPAL */
+        .main-layout { display: grid; grid-template-columns: 1fr 360px; gap: 6px; padding: 6px; height: calc(100vh - 46px); overflow: hidden; }
+
+        .panel { background: var(--panel-bg); border-radius: var(--border-radius); padding: 6px; display: flex; flex-direction: column; gap: 4px; border: 1px solid var(--border-color); overflow: hidden; }
+        .panel-header { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); border-bottom: 1.5px solid var(--border-color); padding-bottom: 2px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+
+        /* LADO IZQUIERDO: JUGADORES Y ACCIONES */
+        .left-main-panel { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; padding-right: 3px; }
+        
+        .roster-section { background: rgba(9, 13, 22, 0.7); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 4px; display: flex; flex-direction: column; gap: 3px; }
+        .sub-header { font-size: 0.65rem; font-weight: 800; color: var(--accent-gold); display: flex; justify-content: space-between; align-items: center; letter-spacing: 0.5px; }
+        
+        .roster-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
+        
+        .player-card { background: #090d16; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 6px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; min-height: 34px; transition: 0.1s; position: relative; }
+        .player-card.selected { border-color: var(--accent-blue); background: #1e3a8a; box-shadow: 0 0 4px rgba(59,130,246,0.5); }
+        .player-card.bench { opacity: 0.5; background: #0c121d; }
+        .player-card.excluded { border-color: var(--accent-red); background: rgba(239, 68, 68, 0.2); }
+        
+        /* OCULTOS POR DEFECTO: Botones de editar y eliminar en tarjetas de jugador */
+        .player-card .p-btn-edit,
+        .player-card .p-btn-delete {
+            display: none !important;
+        }
+
+        /* MODO GESTIÓN PLANTILLA ACTIVO: Mostrar botones de editar y eliminar */
+        body.modo-gestion-plantilla .player-card .p-btn-edit,
+        body.modo-gestion-plantilla .player-card .p-btn-delete {
+            display: inline-flex !important;
+        }
+        body.modo-gestion-plantilla .player-card {
+            border-color: var(--accent-gold);
+            background: #1e293b;
+        }
+
+        .player-info { display: flex; align-items: center; gap: 4px; overflow: hidden; width: 100%; flex-direction: column; align-items: flex-start; }
+        .player-number { font-size: 0.75rem; font-weight: 900; color: var(--accent-gold); min-width: 14px; }
+        .player-name { font-size: 0.65rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; }
+        
+        /* MEJORA DE VISIBILIDAD DE LOS BOTONES DE ACCIÓN EN TARJETAS DE JUGADOR */
+        .player-actions-group { display: flex; gap: 3px; align-items: center; }
+        .p-action-btn { padding: 2px 5px; font-size: 0.65rem; font-weight: bold; border-radius: 3px; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+        .p-btn-exc { background: #dc2626; }
+        .p-btn-edit { background: #475569; }
+        .p-btn-toggle { background: #2563eb; }
+        .p-btn-delete { background: #991b1b; }
+
+        .player-time-badge { font-size: 0.55rem; font-family: monospace; color: var(--accent-gold); background: rgba(0,0,0,0.5); padding: 0px 2px; border-radius: 2px; }
+        .player-exclusion-badge { font-size: 0.55rem; font-family: monospace; color: #fff; background: var(--accent-red); padding: 0px 3px; border-radius: 2px; font-weight: bold; }
+
+        .actions-container { display: flex; flex-direction: column; gap: 4px; flex-grow: 1; }
+        details.action-dropdown { background: #090d16; border: 1px solid var(--border-color); border-radius: var(--border-radius); overflow: hidden; }
+        details.action-dropdown[open] { border-color: var(--accent-blue); }
+        summary.action-dropdown-title { padding: 4px 8px; font-size: 0.75rem; font-weight: 800; color: var(--text-main); cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #111827; }
+        summary.action-dropdown-title::-webkit-details-marker { display: none; }
+        
+        .action-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; padding: 4px; background: #090d16; }
+        .action-btn-wrapper { position: relative; display: flex; align-items: center; width: 100%; }
+        
+        .action-btn { width: 100%; background: #1e293b; border: 1px solid var(--border-color); color: #fff; padding: 3px 2px; border-radius: 4px; font-size: 0.68rem; font-weight: 700; cursor: pointer; text-align: center; min-height: 24px; display: flex; align-items: center; justify-content: center; }
+        .action-btn.selected { border-color: var(--accent-green); background: #14532d; box-shadow: 0 0 4px rgba(34,197,94,0.4); }
+        .action-del-btn { position: absolute; top: 1px; right: 1px; background: rgba(239, 68, 68, 0.9); color: #fff; border: none; border-radius: 2px; width: 12px; height: 12px; font-size: 8px; line-height: 10px; cursor: pointer; display: none; text-align: center; }
+        .action-btn-wrapper:hover .action-del-btn { display: block; }
+
+        @keyframes pulse-active {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            70% { transform: scale(1.02); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+        .btn-ataque-activo {
+            background: var(--accent-green) !important;
+            color: #000 !important;
+            animation: pulse-active 1.2s infinite;
+            border-color: #fff !important;
+        }
+        .ataque-panel-activo {
+            border-color: var(--accent-green) !important;
+            background: rgba(34, 197, 94, 0.15) !important;
+            box-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
+        }
+
+        /* LADO DERECHO: GRÁFICAS Y CRONOLOGÍA */
+        .right-sidebar { display: flex; flex-direction: column; gap: 5px; height: 100%; overflow: hidden; }
+        
+        .graphics-box { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: rgba(9, 13, 22, 0.7); padding: 4px; border-radius: var(--border-radius); border: 1px solid var(--border-color); }
+        .mini-view-container { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .mini-label { font-size: 0.58rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase; }
+        
+        .goal-container-sm { width: 100%; aspect-ratio: 4/2.6; background: #05080f; border-radius: var(--border-radius); position: relative; border: 1px solid var(--border-color); overflow: hidden; }
+        .goal-svg { width: 100%; height: 100%; cursor: crosshair; }
+
+        .court-container-sm { width: 100%; aspect-ratio: 4/2.6; background: var(--accent-blue); border-radius: var(--border-radius); border: 1px solid #fff; position: relative; overflow: hidden; }
+        .court-svg { width: 100%; height: 100%; cursor: crosshair; }
+
+        .btn-register-main { background: var(--accent-green); color: #000; font-size: 0.75rem; font-weight: 900; padding: 6px; border-radius: var(--border-radius); border: none; cursor: pointer; width: 100%; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; }
+        .btn-gol-rival { background: var(--accent-red); color: #fff; font-size: 0.75rem; font-weight: 900; padding: 6px; border-radius: var(--border-radius); border: none; cursor: pointer; width: 100%; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .event-feed { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; flex-grow: 1; padding-right: 2px; }
+        .event-card { background: #090d16; padding: 4px 6px; border-radius: var(--border-radius); border-left: 3px solid var(--accent-blue); font-size: 0.7rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-color); border-left-width: 3px; }
+        .event-card.goal { border-left-color: var(--accent-green); }
+        .event-card.rival { border-left-color: var(--accent-red); }
+        .event-card.timeout { border-left-color: var(--accent-gold); }
+        
+        .event-delete-btn { background: var(--accent-red); color: #fff; border: none; border-radius: 4px; padding: 2px 6px; font-size: 0.65rem; font-weight: 900; cursor: pointer; display: flex; align-items: center; gap: 2px; transition: 0.1s; flex-shrink: 0; box-shadow: 0 1px 3px rgba(239,68,68,0.4); }
+        .event-delete-btn:hover { background: #dc2626; transform: scale(1.05); }
+
+        /* MODALES Y CARPETA */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 10000; }
+        .modal-overlay.active { display: flex; }
+        .modal-content-wide { background: var(--panel-bg); padding: 12px; border-radius: 10px; width: 90vw; max-width: 780px; max-height: 90vh; overflow-y: auto; border: 2px solid var(--border-color); display: flex; flex-direction: column; gap: 10px; }
+        .modal-title { font-size: 0.95rem; font-weight: 900; color: var(--accent-gold); display: flex; justify-content: space-between; align-items: center; }
+        
+        .stats-grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 5px; }
+        .stat-card { background: #090d16; border: 1px solid var(--border-color); padding: 6px; border-radius: var(--border-radius); text-align: center; }
+        .stat-card-val { font-size: 1.05rem; font-weight: 900; color: var(--accent-gold); font-family: monospace; }
+        .stat-card-lbl { font-size: 0.55rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-top: 1px; }
+
+        .analysis-section { background: #090d16; border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 8px; display: flex; flex-direction: column; gap: 5px; }
+        .analysis-title { font-size: 0.75rem; font-weight: 800; color: var(--accent-blue); display: flex; justify-content: space-between; align-items: center; }
+
+        .chart-container { display: flex; flex-direction: column; gap: 4px; margin-top: 3px; }
+        .chart-bar-row { display: flex; align-items: center; gap: 6px; font-size: 0.7rem; }
+        .chart-bar-label { min-width: 110px; color: var(--text-muted); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .chart-bar-track { flex-grow: 1; background: #1e293b; height: 12px; border-radius: 3px; overflow: hidden; position: relative; border: 1px solid var(--border-color); }
+        .chart-bar-fill { background: var(--accent-blue); height: 100%; border-radius: 2px; transition: width 0.3s ease; }
+        .chart-bar-fill.green { background: var(--accent-green); }
+        .chart-bar-fill.red { background: var(--accent-red); }
+        .chart-bar-fill.gold { background: var(--accent-gold); }
+        .chart-bar-val { min-width: 22px; text-align: right; font-family: monospace; font-weight: bold; color: #fff; font-size: 0.75rem; }
+
+        /* EDITOR / CARPETA */
+        .editor-drawer { position: fixed; bottom: 0; left: 0; width: 100%; background: #0b1322; border-top: 2px solid var(--accent-gold); border-radius: 10px 10px 0 0; box-shadow: -6px rgba(0,0,0,0.7); z-index: 9999; transform: translateY(100%); transition: transform 0.3s ease-in-out; max-height: 85vh; display: flex; flex-direction: column; }
+        .editor-drawer.open { transform: translateY(0); }
+        
+        .editor-drawer-header { padding: 8px 12px; background: #162032; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); }
+        .editor-drawer-title { font-size: 0.85rem; font-weight: 900; color: var(--accent-gold); display: flex; align-items: center; gap: 6px; }
+        .editor-drawer-body { padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+
+        .form-group { display: flex; flex-direction: column; gap: 3px; font-size: 0.75rem; }
+        .form-group label { color: var(--text-muted); font-weight: 700; }
+        .form-control { background: #1e293b; border: 1px solid var(--border-color); color: #fff; padding: 5px 6px; border-radius: var(--border-radius); font-size: 0.75rem; }
+        .color-pickers-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 5px; }
+        .color-item { display: flex; align-items: center; justify-content: space-between; background: #1e293b; padding: 5px 8px; border-radius: var(--border-radius); border: 1px solid var(--border-color); font-size: 0.75rem; }
+        .color-item input[type="color"] { border: none; width: 22px; height: 18px; background: none; cursor: pointer; }
+
+        /* ESTILOS DE LA CARPETA DE ARCHIVOS GUARDADOS */
+        .folder-section { background: #090d16; border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+        .folder-list { display: flex; flex-direction: column; gap: 4px; max-height: 150px; overflow-y: auto; }
+        .folder-item { background: #131c2e; border: 1px solid var(--border-color); padding: 5px 8px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; }
+        .folder-item-info { display: flex; flex-direction: column; gap: 1px; }
+        .folder-item-title { font-weight: bold; color: var(--accent-gold); }
+        .folder-item-date { font-size: 0.6rem; color: var(--text-muted); }
+        .folder-actions { display: flex; gap: 4px; }
+
+        .modal-overlay-small { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 10000; }
+        .modal-overlay-small.active { display: flex; }
+        .modal-content { background: var(--panel-bg); padding: 12px; border-radius: 10px; width: 320px; text-align: center; border: 2px solid var(--border-color); }
+        .porteria-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: #000; padding: 5px; border: 2px solid var(--accent-red); border-radius: 6px; margin-bottom: 10px; }
+        .btn-zona { background: #090d16; color: #fff; border: 1px solid var(--border-color); border-radius: 4px; padding: 10px 2px; font-size: 0.7rem; font-weight: 800; cursor: pointer; transition: 0.1s; }
+        .btn-zona:active { background: var(--accent-red); }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="score-container">
+            <span class="editable-title-wrap"><span class="team-label" id="lbl-team-home" onclick="editarNombreEquipo('home')">SAR</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('lbl-team-home')" title="Ajustar tamaño">🔍📏</button></span>
+            <button class="timeout-badge" id="btn-timeout-home" onclick="pedirTiempoMuerto('home')" title="Pedir Tiempo Muerto SAR"><span id="txt-tm-home-label">TM:</span> <span id="count-timeout-home">1</span>/1</button>
+            <div class="score-box" id="score-display" onclick="editarMarcadorDirecto()">00 - 00</div>
+            <button class="timeout-badge" id="btn-timeout-away" onclick="pedirTiempoMuerto('away')" title="Pedir Tiempo Muerto Rival"><span id="txt-tm-away-label">TM:</span> <span id="count-timeout-away">1</span>/1</button>
+            <span class="editable-title-wrap"><span class="team-label" id="lbl-team-away" onclick="editarNombreEquipo('away')">RIVAL</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('lbl-team-away')" title="Ajustar tamaño">🔍📏</button></span>
+        </div>
+
+        <div class="timer-box" id="timer-display" onclick="toggleTimer()" oncontextmenu="editarTiempoManual(event); return false;">00:00</div>
+
+        <div class="top-actions">
+            <!-- BOTÓN PARA GESTIONAR PLANTILLA (MOSTRAR/OCULTAR LÁPIZ Y ELIMINAR JUGADORES) -->
+            <button class="btn btn-purple" id="btn-toggle-gestion-plantilla" onclick="toggleModoGestionPlantilla()" title="Mostrar/Ocultar controles de edición en plantilla">⚙️ Gestionar Plantilla</button>
+            <!-- BOTÓN MAESTRO PARA MOSTRAR/OCULTAR LUPAS Y LÁPICES -->
+            <button class="btn btn-gold" id="btn-toggle-lupas" onclick="toggleModoAjusteTexto()" title="Mostrar/Ocultar controles de tamaño">🔍 Ajustar Textos</button>
+            <button class="btn btn-gold" id="btn-header-analitica" onclick="abrirModalEstadisticas()">📈 Analítica</button><button class="btn-edit-label" onclick="ajustarTamanioElemento('btn-header-analitica')" title="Ajustar tamaño" style="color:#000;">🔍</button>
+            <button class="btn btn-blue" id="btn-mode-toggle" onclick="toggleEditorDrawer()">⚙️ Editor & Carpeta</button>
+            <button class="btn btn-purple" id="btn-header-excel" onclick="exportFullData()">📊 Excel</button><button class="btn-edit-label" onclick="ajustarTamanioElemento('btn-header-excel')" title="Ajustar tamaño" style="color:#fff;">🔍</button>
+            <button class="btn btn-red" onclick="resetMatch()">🗑</button>
+        </div>
+    </header>
+
+    <div class="main-layout">
+        
+        <!-- PANEL IZQUIERDO: JUGADORES Y ACCIONES -->
+        <div class="panel left-main-panel">
+            
+            <div class="roster-section">
+                <div class="panel-header" style="border:none; padding-bottom:0px; flex-wrap: wrap; gap: 4px;">
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                        <span class="editable-title-wrap">
+                            <span id="txt-title-plantilla">Plantilla SAR</span>
+                            <button class="btn-edit-label" onclick="editarTextoEtiqueta('txt-title-plantilla')" title="Editar etiqueta">✏️</button>
+                            <button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-title-plantilla')" title="Ajustar tamaño de texto">🔍📏</button>
+                        </span>
+                        <!-- NUEVO SELECTOR DE EQUIPOS / PLANTILLAS -->
+                        <select id="select-equipo-plantilla" class="form-control" style="padding: 2px 4px; font-size: 0.65rem; width: 110px;" onchange="cambiarPlantillaEquipo(this.value)" title="Seleccionar equipo guardado"></select>
+                    </div>
+                    <div style="display: flex; gap: 2px;">
+                        <button class="btn btn-gold btn-sm" id="btn-guardar-equipo-main" onclick="guardarPlantillaActual()" title="Guardar equipo actual">💾 Guardar</button><button class="btn-edit-label" onclick="ajustarTamanioElemento('btn-guardar-equipo-main')" title="Ajustar tamaño" style="color:#000;">🔍</button>
+                        <button class="btn btn-green btn-sm" id="btn-add-jugador-main" onclick="agregarJugador()">+ Jugador</button><button class="btn-edit-label" onclick="ajustarTamanioElemento('btn-add-jugador-main')" title="Ajustar tamaño" style="color:#000;">🔍</button>
+                    </div>
+                </div>
+                
+                <div class="sub-header">
+                    <span class="editable-title-wrap"><span id="txt-sub-en-pista">🤾 EN PISTA</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-sub-en-pista')" title="Ajustar tamaño">🔍📏</button></span>
+                </div>
+                <div class="roster-grid" id="roster-field"></div>
+                
+                <div class="sub-header" style="margin-top: 2px;">
+                    <span class="editable-title-wrap"><span id="txt-sub-banquillo">🪑 BANQUILLO</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-sub-banquillo')" title="Ajustar tamaño">🔍📏</button></span>
+                </div>
+                <div class="roster-grid" id="roster-bench"></div>
+            </div>
+
+            <!-- TARJETA DE ATAQUES EN VIVO -->
+            <div class="panel" id="ataque-panel-card" style="background: rgba(30, 58, 138, 0.2); border: 1px dashed var(--accent-blue); padding: 4px;">
+                <div class="panel-header" style="border:none; padding-bottom:0px;">
+                    <span class="editable-title-wrap">
+                        <span id="ataque-title-label" style="color: var(--accent-gold);">⚔ ATAQUE EN VIVO</span>
+                        <button class="btn-edit-label" onclick="editarTextoEtiqueta('ataque-title-label')" title="Editar etiqueta">✏️</button>
+                        <button class="btn-edit-label" onclick="ajustarTamanioElemento('ataque-title-label')" title="Ajustar tamaño de texto">🔍📏</button>
+                    </span>
+                    <span id="ataque-estado-badge" style="font-size:0.65rem; background:var(--accent-blue); color:#fff; padding:1px 4px; border-radius:3px;">Inactivo</span>
+                </div>
+                <div style="display: flex; gap: 4px; margin-top: 2px;">
+                    <button class="btn btn-blue btn-sm" id="btn-iniciar-ataque" style="flex:1; justify-content:center; padding: 4px;" onclick="registrarInicioAtaque()">▶ Iniciar</button>
+                </div>
+            </div>
+
+            <div class="panel-header">
+                <span class="editable-title-wrap">
+                    <span id="txt-title-acciones">Acciones de Partido</span>
+                    <button class="btn-edit-label" onclick="editarTextoEtiqueta('txt-title-acciones')" title="Editar etiqueta">✏️</button>
+                    <button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-title-acciones')" title="Ajustar tamaño de texto">🔍📏</button>
+                </span>
+                <button class="btn btn-gold btn-sm" id="btn-add-accion-main" onclick="crearNuevaAccion()">+ Acción</button><button class="btn-edit-label" onclick="ajustarTamanioElemento('btn-add-accion-main')" title="Ajustar tamaño" style="color:#000;">🔍</button>
+            </div>
+
+            <div class="actions-container">
+                <details class="action-dropdown" open>
+                    <summary class="action-dropdown-title">
+                        <span class="editable-title-wrap">
+                            <span id="txt-title-ataque">⚔ ATAQUE</span>
+                            <button class="btn-edit-label" onclick="editarTextoEtiqueta('txt-title-ataque')" title="Editar etiqueta">✏️</button>
+                            <button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-title-ataque')" title="Ajustar tamaño de texto">🔍📏</button>
+                        </span>
+                        <span style="font-size:0.6rem; color:var(--text-muted);">▼</span>
+                    </summary>
+                    <div class="action-grid" id="action-grid-attack"></div>
+                </details>
+
+                <details class="action-dropdown">
+                    <summary class="action-dropdown-title">
+                        <span class="editable-title-wrap">
+                            <span id="txt-title-defensa">🛡 DEFENSA / OTROS</span>
+                            <button class="btn-edit-label" onclick="editarTextoEtiqueta('txt-title-defensa')" title="Editar etiqueta">✏️</button>
+                            <button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-title-defensa')" title="Ajustar tamaño de texto">🔍📏</button>
+                        </span>
+                        <span style="font-size:0.6rem; color:var(--text-muted);">▼</span>
+                    </summary>
+                    <div class="action-grid" id="action-grid-defense"></div>
+                </details>
+            </div>
+
+        </div>
+
+        <!-- PANEL DERECHO: GRÁFICAS Y CRONOLOGÍA -->
+        <div class="right-sidebar">
+            
+            <div class="panel" style="flex-shrink: 0; padding: 4px;">
+                <div class="panel-header" style="margin-bottom: 2px;">
+                    <span class="editable-title-wrap">
+                        <span id="txt-title-ubicacion">Ubicación Lanzamiento (Goles)</span>
+                        <button class="btn-edit-label" onclick="editarTextoEtiqueta('txt-title-ubicacion')" title="Editar etiqueta">✏️</button>
+                        <button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-title-ubicacion')" title="Ajustar tamaño de texto">🔍📏</button>
+                    </span>
+                </div>
+                
+                <div class="graphics-box">
+                    <div class="mini-view-container">
+                        <span class="editable-title-wrap"><span class="mini-label" id="txt-lbl-porteria-mini">Portería</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-lbl-porteria-mini')" title="Ajustar tamaño">🔍📏</button></span>
+                        <div class="goal-container-sm">
+                            <svg class="goal-svg" viewBox="0 0 300 200" onclick="handleGoalClick(event)">
+                                <pattern id="net" width="12" height="12" patternUnits="userSpaceOnUse">
+                                    <path d="M 12 0 L 0 12 M 0 0 L 12 12" fill="none" stroke="#334155" stroke-width="1"/>
+                                </pattern>
+                                <rect x="20" y="20" width="260" height="180" fill="url(#net)" />
+                                <rect x="14" y="14" width="12" height="186" fill="#dc2626" />
+                                <rect x="274" y="14" width="12" height="186" fill="#dc2626" />
+                                <rect x="14" y="14" width="272" height="12" fill="#dc2626" />
+                                <circle id="goal-marker" cx="-20" cy="-20" r="7" fill="var(--accent-green)" stroke="#fff" stroke-width="1.5" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="mini-view-container">
+                        <span class="editable-title-wrap"><span class="mini-label" id="txt-lbl-campo-mini">Campo</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-lbl-campo-mini')" title="Ajustar tamaño">🔍📏</button></span>
+                        <div class="court-container-sm">
+                            <svg class="court-svg" viewBox="0 0 300 200" onclick="handleCourtClick(event)">
+                                <rect x="0" y="0" width="300" height="200" fill="var(--accent-blue)" />
+                                <path d="M 60 0 A 90 90 0 0 0 240 0 Z" fill="#0369a1" stroke="#fff" stroke-width="1.5" />
+                                <path d="M 30 0 A 120 120 0 0 0 270 0" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="4,4" />
+                                <circle id="court-marker" cx="-20" cy="-20" r="6" fill="var(--accent-gold)" stroke="#fff" stroke-width="1.5" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 4px; margin-top: 4px;">
+                    <button class="btn-register-main" id="btn-reg-main" onclick="registerEvent()">✅ REGISTRAR</button><button class="btn-edit-label" onclick="ajustarTamanioElemento('btn-reg-main')" title="Ajustar tamaño" style="color:#000;">🔍</button>
+                    <button class="btn-gol-rival" id="btn-gol-rival-main" onclick="abrirModalGolRival()">⚽ GOL RIVAL</button><button class="btn-edit-label" onclick="ajustarTamanioElemento('btn-gol-rival-main')" title="Ajustar tamaño" style="color:#fff;">🔍</button>
+                </div>
+            </div>
+
+            <div class="panel" style="flex-grow: 1;">
+                <div class="panel-header">
+                    <span class="editable-title-wrap">
+                        <span id="txt-title-cronologia">Cronología</span>
+                        <button class="btn-edit-label" onclick="editarTextoEtiqueta('txt-title-cronologia')" title="Editar etiqueta">✏️</button>
+                        <button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-title-cronologia')" title="Ajustar tamaño de texto">🔍📏</button>
+                    </span>
+                </div>
+                <div class="event-feed" id="event-feed"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- MODAL DE ESTADÍSTICAS -->
+    <div class="modal-overlay" id="modal-estadisticas">
+        <div class="modal-content-wide">
+            <div class="modal-title">
+                <span class="editable-title-wrap"><span id="txt-modal-analitica-title">📊 ANALÍTICA Y EXPORTACIÓN</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-modal-analitica-title')" title="Ajustar tamaño">🔍📏</button></span>
+                <div style="display: flex; gap: 4px;">
+                    <button class="btn btn-purple btn-sm" id="btn-csv-modal" onclick="exportFullData()">📥 Descargar Excel</button><button class="btn-edit-label" onclick="ajustarTamanioElemento('btn-csv-modal')" title="Ajustar tamaño" style="color:#fff;">🔍</button>
+                    <button class="btn btn-red btn-sm" onclick="cerrarModalEstadisticas()">✕</button>
+                </div>
+            </div>
+
+            <div class="stats-grid-cards">
+                <div class="stat-card">
+                    <div class="stat-card-val" id="stat-total-ataques">0</div>
+                    <div class="stat-card-lbl" id="lbl-stat-ataques">Ataques</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-val" id="stat-total-goles">0</div>
+                    <div class="stat-card-lbl" id="lbl-stat-goles">Goles (SAR)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-val" id="stat-total-asistencias">0</div>
+                    <div class="stat-card-lbl" id="lbl-stat-asist">Asistencias</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-val" id="stat-total-tiros-fuera">0</div>
+                    <div class="stat-card-lbl" id="lbl-stat-fallos">Fallos / Paradas</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-val" id="stat-goles-encajados">0</div>
+                    <div class="stat-card-lbl" id="lbl-stat-contra">Goles Contra</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-val" id="stat-efectividad">0%</div>
+                    <div class="stat-card-lbl" id="lbl-stat-efec">Efectividad</div>
+                </div>
+            </div>
+
+            <div class="analysis-section">
+                <div class="analysis-title">
+                    <span class="editable-title-wrap"><span id="txt-sec-goles-favor">🥅 Zonas de Goles a Favor (SAR)</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-sec-goles-favor')" title="Ajustar tamaño">🔍📏</button></span>
+                </div>
+                <div class="chart-container" id="chart-goles-favor-container">
+                    <span style="color:var(--text-muted); font-size:0.7rem;">Sin goles a favor con ubicación aún.</span>
+                </div>
+            </div>
+
+            <div class="analysis-section">
+                <div class="analysis-title">
+                    <span class="editable-title-wrap"><span id="txt-sec-goles-contra">🥅 Zonas de Goles en Contra (Rival)</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-sec-goles-contra')" title="Ajustar tamaño">🔍📏</button></span>
+                </div>
+                <div class="chart-container" id="chart-goles-contra-container">
+                    <span style="color:var(--text-muted); font-size:0.7rem;">Sin goles en contra con ubicación aún.</span>
+                </div>
+            </div>
+
+            <div class="analysis-section">
+                <div class="analysis-title">
+                    <span class="editable-title-wrap"><span id="txt-sec-desglose-jugador">🤾 Desglose por Jugador</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-sec-desglose-jugador')" title="Ajustar tamaño">🔍📏</button></span>
+                    <select class="form-control" id="select-filter-player" onchange="renderPlayerShotAnalysis()" style="width: 130px; padding: 2px 5px; font-size: 0.7rem;"></select>
+                </div>
+                <div id="player-shot-results" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 3px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BARRA DESPLEGABLE INFERIOR (MODO EDITOR Y CARPETA) -->
+    <div class="editor-drawer" id="editor-drawer">
+        <div class="editor-drawer-header">
+            <div class="editor-drawer-title">
+                <span class="editable-title-wrap"><span id="txt-drawer-title-config">⚙️ CONFIGURACIÓN, DATOS Y CARPETA DE PARTIDOS</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-drawer-title-config')" title="Ajustar tamaño" style="color:#facc15;">🔍📏</button></span>
+            </div>
+            <button class="btn btn-red btn-sm" onclick="toggleEditorDrawer()">✕</button>
+        </div>
+        <div class="editor-drawer-body">
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                <button class="btn btn-gold" id="btn-guardar-config-drawer" style="justify-content: center; padding: 6px;" onclick="guardarConfiguracionActual()">💾 Guardar Configuración</button><button class="btn-edit-label" onclick="ajustarTamanioElemento('btn-guardar-config-drawer')" title="Ajustar tamaño" style="color:#000;">🔍</button>
+                <button class="btn btn-green" id="btn-guardar-partido-drawer" style="justify-content: center; padding: 6px;" onclick="guardarDatosPartidoActual()">💾 Guardar Partido (Datos)</button><button class="btn-edit-label" onclick="ajustarTamanioElemento('btn-guardar-partido-drawer')" title="Ajustar tamaño" style="color:#000;">🔍</button>
+            </div>
+
+            <div class="folder-section">
+                <div class="panel-header" style="border:none; padding-bottom:0px;">
+                    <span class="editable-title-wrap"><span id="txt-folder-section-title" style="color:var(--accent-gold);">📁 Carpeta de Partidos y Configuraciones Guardadas</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-folder-section-title')" title="Ajustar tamaño">🔍📏</button></span>
+                </div>
+                <div class="folder-list" id="folder-items-container"></div>
+            </div>
+
+            <h4 style="font-size: 0.75rem; color: var(--accent-gold); border-bottom: 1px solid var(--border-color); padding-bottom: 2px; margin-top: 5px;">
+                <span class="editable-title-wrap"><span id="txt-paleta-colores-title">🎨 Paleta de Colores</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-paleta-colores-title')" title="Ajustar tamaño">🔍📏</button></span>
+            </h4>
+            <div class="color-pickers-grid">
+                <div class="color-item"><label class="editable-title-wrap"><span id="lbl-col-fondo">Fondo</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('lbl-col-fondo')" title="Ajustar tamaño">🔍📏</button></label><input type="color" id="picker-bg" value="#090d16" oninput="cambiarColor('--bg-dark', this.value)"></div>
+                <div class="color-item"><label class="editable-title-wrap"><span id="lbl-col-paneles">Paneles</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('lbl-col-paneles')" title="Ajustar tamaño">🔍📏</button></label><input type="color" id="picker-panel" value="#131c2e" oninput="cambiarColor('--panel-bg', this.value)"></div>
+                <div class="color-item"><label class="editable-title-wrap"><span id="lbl-col-verde">Verde</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('lbl-col-verde')" title="Ajustar tamaño">🔍📏</button></label><input type="color" id="picker-green" value="#22c55e" oninput="cambiarColor('--accent-green', this.value)"></div>
+                <div class="color-item"><label class="editable-title-wrap"><span id="lbl-col-rojo">Rojo</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('lbl-col-rojo')" title="Ajustar tamaño">🔍📏</button></label><input type="color" id="picker-red" value="#ef4444" oninput="cambiarColor('--accent-red', this.value)"></div>
+                <div class="color-item"><label class="editable-title-wrap"><span id="lbl-col-azul">Azul</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('lbl-col-azul')" title="Ajustar tamaño">🔍📏</button></label><input type="color" id="picker-blue" value="#3b82f6" oninput="cambiarColor('--accent-blue', this.value)"></div>
+                <div class="color-item"><label class="editable-title-wrap"><span id="lbl-col-dorado">Dorado</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('lbl-col-dorado')" title="Ajustar tamaño">🔍📏</button></label><input type="color" id="picker-gold" value="#facc15" oninput="cambiarColor('--accent-gold', this.value)"></div>
+            </div>
+            <div style="display: flex; gap: 5px; margin-top: 5px;">
+                <button class="btn btn-blue" id="btn-export-config-json" style="flex:1; justify-content:center; padding: 5px;" onclick="exportarConfigJSON()">📥 Exportar Config (Archivo)</button><button class="btn-edit-label" onclick="ajustarTamanioElemento('btn-export-config-json')" title="Ajustar tamaño" style="color:#fff;">🔍</button>
+                <button class="btn btn-purple" id="btn-import-config-json" style="flex:1; justify-content:center; padding: 5px;" onclick="importarConfigJSON()">📤 Importar Config (Archivo)</button><button class="btn-edit-label" onclick="ajustarTamanioElemento('btn-import-config-json')" title="Ajustar tamaño" style="color:#fff;">🔍</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PORTERÍA RIVAL 3X3 -->
+    <div class="modal-overlay-small" id="modal-gol-rival">
+        <div class="modal-content">
+            <div style="font-size: 0.9rem; font-weight: 900; color: var(--accent-red); margin-bottom: 3px;" class="editable-title-wrap"><span id="txt-gol-rival-modal-h">GOL ENCAJADO (RIVAL)</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-gol-rival-modal-h')" title="Ajustar tamaño">🔍📏</button></div>
+            <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 8px;" class="editable-title-wrap"><span id="txt-gol-rival-sub">Selecciona la zona de la portería:</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-gol-rival-sub')" title="Ajustar tamaño">🔍📏</button></div>
+
+            <div class="porteria-grid">
+                <button class="btn-zona" onclick="guardarGolRivalConZona('Superior Derecha')">Sup. Der</button>
+                <button class="btn-zona" onclick="guardarGolRivalConZona('Superior Centro')">Sup. Centro</button>
+                <button class="btn-zona" onclick="guardarGolRivalConZona('Superior Izquierda')">Sup. Izq</button>
+
+                <button class="btn-zona" onclick="guardarGolRivalConZona('Media Derecha')">Media Der</button>
+                <button class="btn-zona" onclick="guardarGolRivalConZona('Centro')">Centro</button>
+                <button class="btn-zona" onclick="guardarGolRivalConZona('Media Izquierda')">Media Izq</button>
+
+                <button class="btn-zona" onclick="guardarGolRivalConZona('Inferior Derecha')">Inf. Der</button>
+                <button class="btn-zona" onclick="guardarGolRivalConZona('Inferior Centro')">Inf. Centro</button>
+                <button class="btn-zona" onclick="guardarGolRivalConZona('Inferior Izquierda')">Inf. Izq</button>
+            </div>
+
+            <button class="btn btn-red" id="btn-cancelar-gol-rival" style="width: 100%; justify-content: center; padding: 6px;" onclick="cerrarModalGolRival()">Cancelar</button><button class="btn-edit-label" onclick="ajustarTamanioElemento('btn-cancelar-gol-rival')" title="Ajustar tamaño" style="color:#fff;">🔍</button>
+        </div>
+    </div>
+
+    <!-- MÓDULO EXTERNO FLOTANTE: MAPA DE TIROS Y ZONAS BASADAS EN DENSIDAD DE COORDENADAS -->
+    <button id="btn-abrir-mapa-ex" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; background: #facc15; color: #000; padding: 10px 16px; border-radius: 30px; border: none; font-weight: 900; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.5); font-size: 0.75rem;">
+        📍 <span id="txt-btn-mapa-flotante">Mapa Tiros Campo</span>
+    </button>
+    <button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-btn-mapa-flotante')" title="Ajustar tamaño" style="color:#000;">🔍📏</button>
+
+    <div id="modal-mapa-ex" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 10005; justify-content: center; align-items: center;">
+        <div style="background: #131c2e; padding: 16px; border-radius: 10px; width: 90vw; max-width: 460px; text-align: center; border: 2px solid #334155; box-shadow: 0 6px 20px rgba(0,0,0,0.7); color: #f8fafc; max-height: 90vh; overflow-y: auto;">
+            <h3 style="margin-top: 0; color: #facc15; font-size: 0.95rem; margin-bottom: 8px;" class="editable-title-wrap"><span id="txt-mapa-ex-title">Mapa de Densidad y Zonas de Lanzamiento</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-mapa-ex-title')" title="Ajustar tamaño" style="color:#facc15;">🔍📏</button></h3>
+            
+            <div style="margin-bottom: 8px; display: flex; justify-content: center; gap: 12px; font-size: 0.75rem; align-items: center;">
+                <label style="cursor: pointer; font-weight: bold; color: var(--accent-green);"><input type="radio" name="equipo-ex" value="SAR" checked onchange="actualizarVistaMapaEx()"> SAR</label>
+                <label style="cursor: pointer; font-weight: bold; color: var(--accent-red);"><input type="radio" name="equipo-ex" value="RIVAL" onchange="actualizarVistaMapaEx()"> Rival</label>
+                
+                <select id="resultado-ex" style="padding: 3px; background: #1e293b; color: #fff; border: 1px solid #334155; border-radius: 4px; font-size: 0.75rem;">
+                    <option value="gol">Gol 🎯</option>
+                    <option value="paradon">Paradón 🧤</option>
+                    <option value="fuera">Fuera ❌</option>
+                </select>
+            </div>
+
+            <!-- CANCHA CON ZONAS DINÁMICAS Y DENSIDAD DE COORDENADAS -->
+            <div id="cancha-ex" style="position: relative; width: 100%; height: 210px; background: #3b82f6; border: 2px solid #fff; border-radius: 6px; cursor: crosshair; overflow: hidden;">
+                <!-- Área de 6m -->
+                <div style="position: absolute; top: 0; left: 20%; width: 60%; height: 35%; border: 2px solid rgba(255,255,255,0.6); border-top: none; border-radius: 0 0 50px 50px; background: #0369a1; pointer-events: none;"></div>
+                <!-- Overlay de Densidad y Porcentajes por Zona Táctica -->
+                <div id="cancha-zonas-stats-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); padding: 4px; gap: 4px;"></div>
+            </div>
+
+            <!-- PANEL DE ESTADÍSTICAS Y DENSIDAD POR ZONAS TÁCTICAS -->
+            <div id="panel-stats-globales-ex" style="margin-top: 10px; background: #090d16; border: 1px solid #334155; border-radius: 6px; padding: 8px; text-align: left; font-size: 0.7rem;">
+                <div style="font-weight: 800; color: var(--accent-gold); margin-bottom: 4px; text-align: center; text-transform: uppercase;" id="titulo-panel-zonas-activo">📊 Concentración y Densidad de Tiros (SAR)</div>
+                <div id="stats-zonas-equipo-activo" style="background: #131c2e; padding: 6px; border-radius: 4px;">
+                    <span style="color: var(--text-muted);">Sin datos</span>
+                </div>
+            </div>
+
+            <div style="margin-top: 10px; display: flex; justify-content: space-between; gap: 8px;">
+                <button id="btn-borrar-ultimo-ex" style="background: #ef4444; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: bold;">Borrar Último</button>
+                <button id="btn-cerrar-mapa-ex" style="background: #64748b; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: bold;">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ARRAY GLOBAL ÚNICO E INALTERABLE DE TIROSEX -->
+    <script>
+        let tirosEx = [];
+    </script>
+
+    <script>
+        /* =====================================================================
+           ESTADO GLOBAL
+           ===================================================================== */
+        let isDrawerOpen = false;
+        let timerInterval = null, seconds = 0;
+        let timerStartMs = 0, timerStartSeconds = 0;   // el cronómetro se calcula con Date.now() (no se atrasa)
+        let ultimoAutoguardado = 0;
+        let homeGoals = 0, awayGoals = 0;
+        let homeName = 'SAR', awayName = 'RIVAL';
+        let selectedPlayerId = 1, selectedAction = 'Gol 6m';
+        let courtCoords = { x: -20, y: -20 }, goalCoords = { x: -20, y: -20 };
+        let eventsLog = [];
+        let ataqueEnCurso = false;
+        let ataqueNumero = 0, ataqueInicioSeg = 0;   // nº de ataques iniciados y segundo en que empezó el actual
+        const MAX_TIEMPOS_MUERTOS = 1;
+        let timeoutsHome = 1;
+        let timeoutsAway = 1;
+        let coloresPersonalizados = {};
+
+        const COORD_VERSION = 2;   // v2 = coordenadas del mapa normalizadas a 300x200
+        const CLAVE_AUTOGUARDADO = 'sar_partido_en_curso';
+        const PICKERS_COLOR = {
+            '--bg-dark': 'picker-bg', '--panel-bg': 'picker-panel', '--accent-green': 'picker-green',
+            '--accent-red': 'picker-red', '--accent-blue': 'picker-blue', '--accent-gold': 'picker-gold'
+        };
+        const ZONAS_TACTICAS = [
+            'Extremo Izquierdo (6m)', 'Lateral Izquierdo (6m)', 'Central / Pivote (6m)',
+            'Lateral Derecho (6m)', 'Extremo Derecho (6m)',
+            '9m Izquierda', '9m Central', '9m Derecha', 'Distancia Lejana (10m+)'
+        ];
+        const SECTORES_MAPA = [
+            { titulo: 'Izquierda', claves: ['Extremo Izquierdo (6m)', 'Lateral Izquierdo (6m)', '9m Izquierda'] },
+            { titulo: 'Central', claves: ['Central / Pivote (6m)', '9m Central', 'Distancia Lejana (10m+)'] },
+            { titulo: 'Derecha', claves: ['Extremo Derecho (6m)', 'Lateral Derecho (6m)', '9m Derecha'] }
+        ];
+        const ZONAS_PORTERIA = [
+            'Superior Derecha', 'Superior Centro', 'Superior Izquierda',
+            'Media Derecha', 'Media Centro', 'Media Izquierda',
+            'Inferior Derecha', 'Inferior Centro', 'Inferior Izquierda'
+        ];
+
+        let players = [
+            { id: 1, number: 2, name: 'Jugador 1', onField: true, totalSeconds: 0, attacksCount: 0, exclusionSeconds: 0 },
+            { id: 2, number: 7, name: 'Jugador 2', onField: true, totalSeconds: 0, attacksCount: 0, exclusionSeconds: 0 },
+            { id: 3, number: 9, name: 'Jugador 3', onField: true, totalSeconds: 0, attacksCount: 0, exclusionSeconds: 0 },
+            { id: 4, number: 10, name: 'Jugador 4', onField: true, totalSeconds: 0, attacksCount: 0, exclusionSeconds: 0 },
+            { id: 5, number: 11, name: 'Jugador 5', onField: true, totalSeconds: 0, attacksCount: 0, exclusionSeconds: 0 },
+            { id: 6, number: 13, name: 'Jugador 6', onField: true, totalSeconds: 0, attacksCount: 0, exclusionSeconds: 0 },
+            { id: 7, number: 4, name: 'Suplente 1', onField: false, totalSeconds: 0, attacksCount: 0, exclusionSeconds: 0 },
+            { id: 8, number: 8, name: 'Suplente 2', onField: false, totalSeconds: 0, attacksCount: 0, exclusionSeconds: 0 }
+        ];
+
+        let actions = [
+            { id: 'a1', category: 'attack', name: 'Gol 6m' },
+            { id: 'a2', category: 'attack', name: 'Gol 9m' },
+            { id: 'a3', category: 'attack', name: 'Gol 7m' },
+            { id: 'a4', category: 'attack', name: 'Gol Contraataque' },
+            { id: 'a5', category: 'attack', name: 'Asistencia' },
+            { id: 'a6', category: 'attack', name: 'Fallo / Parada' },
+            { id: 'd1', category: 'defense', name: 'Parada Portero' },
+            { id: 'd2', category: 'defense', name: 'Recuperación' },
+            { id: 'd3', category: 'defense', name: 'Falta Técnica' },
+            { id: 'd4', category: 'defense', name: 'Exclusión 2m' }
+        ];
+
+        /* =====================================================================
+           UTILIDADES
+           ===================================================================== */
+        function escaparHTML(v) {
+            return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        function leerJSON(clave, defecto) {
+            try {
+                const raw = localStorage.getItem(clave);
+                return raw ? JSON.parse(raw) : defecto;
+            } catch (e) { return defecto; }
+        }
+
+        function escribirJSON(clave, valor) {
+            try { localStorage.setItem(clave, JSON.stringify(valor)); return true; }
+            catch (e) { console.warn('No se pudo escribir en localStorage:', clave, e); return false; }
+        }
+
+        function leerCrudo(clave) {
+            try { return localStorage.getItem(clave); } catch (e) { return null; }
+        }
+
+        function formatearSegundos(totalSec) {
+            totalSec = Math.max(0, Math.floor(Number(totalSec) || 0));
+            const m = Math.floor(totalSec / 60);
+            const s = totalSec % 60;
+            return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+
+        function nombreEquipoPorLado(lado) { return lado === 'away' ? awayName : homeName; }
+
+        function descargarBlob(blob, nombre) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = nombre;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 2000);
+        }
+
+        window.onload = () => {
+            cargarConfigLocal();                 // PRIMERO se lee lo guardado (antes se sobrescribía con los valores por defecto)
+            cargarPlantillasGuardadasSelector();
+            aplicarEtiquetasGuardadas();
+            renderRoster();
+            renderActions();
+            actualizarCarpetaVisual();
+            actualizarTimeoutsUI();
+            actualizarMarcador();
+            actualizarDisplayTiempo();
+            aplicarTamaniosGuardados();
+            recuperarPartidoAutoguardado();
+        };
+
+        /* =====================================================================
+           MODOS DE EDICIÓN / ETIQUETAS / TAMAÑOS
+           ===================================================================== */
+        function toggleModoGestionPlantilla() {
+            document.body.classList.toggle('modo-gestion-plantilla');
+            const btn = document.getElementById('btn-toggle-gestion-plantilla');
+            if (document.body.classList.contains('modo-gestion-plantilla')) {
+                btn.style.background = '#22c55e';
+                btn.style.color = '#000';
+                btn.innerText = '⚙️ Ocultar Edición';
+            } else {
+                btn.style.background = '';
+                btn.style.color = '';
+                btn.innerText = '⚙️ Gestionar Plantilla';
+            }
+        }
+
+        function toggleModoAjusteTexto() {
+            document.body.classList.toggle('modo-ajuste-texto');
+            const btn = document.getElementById('btn-toggle-lupas');
+            if (document.body.classList.contains('modo-ajuste-texto')) {
+                btn.style.background = '#22c55e';
+                btn.style.color = '#000';
+                btn.innerText = 'ocultar lupas';
+            } else {
+                btn.style.background = '';
+                btn.style.color = '';
+                btn.innerText = '🔍 Ajustar Textos';
+            }
+        }
+
+        function editarTextoEtiqueta(idElemento) {
+            const el = document.getElementById(idElemento);
+            if (!el) return;
+            const textoActual = el.innerText;
+            const nuevoTexto = prompt("Editar texto de etiqueta:", textoActual);
+            if (nuevoTexto !== null && nuevoTexto.trim() !== "") {
+                el.innerText = nuevoTexto.trim();
+                const mapa = leerJSON('sar_etiquetas_textos', {});
+                mapa[idElemento] = nuevoTexto.trim();
+                escribirJSON('sar_etiquetas_textos', mapa);     // las etiquetas editadas ahora SÍ persisten
+                guardarConfigLocal();
+            }
+        }
+
+        function aplicarEtiquetasGuardadas() {
+            const mapa = leerJSON('sar_etiquetas_textos', {});
+            for (const [id, texto] of Object.entries(mapa)) {
+                const el = document.getElementById(id);
+                if (el && typeof texto === 'string') el.innerText = texto;
+            }
+        }
+
+        function etiquetaBase(id, porDefecto) {
+            const mapa = leerJSON('sar_etiquetas_textos', {});
+            return (typeof mapa[id] === 'string' && mapa[id]) ? mapa[id] : porDefecto;
+        }
+
+        function ajustarTamanioElemento(idElemento) {
+            const el = document.getElementById(idElemento);
+            if (!el) return;
+            const tamanioActual = window.getComputedStyle(el).fontSize;
+            const nuevoTamanio = prompt(`Introduce el tamaño de texto deseado para "${el.innerText}" (ej. 16px, 1.2rem, 20px):`, tamanioActual);
+            if (nuevoTamanio !== null && nuevoTamanio.trim() !== "") {
+                el.style.fontSize = nuevoTamanio.trim();
+                const tamaniosMap = leerJSON('sar_tamanios_textos', {});
+                tamaniosMap[idElemento] = nuevoTamanio.trim();
+                escribirJSON('sar_tamanios_textos', tamaniosMap);
+            }
+        }
+
+        function aplicarTamaniosGuardados() {
+            const tamaniosMap = leerJSON('sar_tamanios_textos', {});
+            for (const [id, size] of Object.entries(tamaniosMap)) {
+                const el = document.getElementById(id);
+                if (el) el.style.fontSize = size;
+            }
+        }
+
+        function toggleEditorDrawer() {
+            isDrawerOpen = !isDrawerOpen;
+            const drawer = document.getElementById('editor-drawer');
+            const btnToggle = document.getElementById('btn-mode-toggle');
+            if (isDrawerOpen) {
+                drawer.classList.add('open');
+                btnToggle.innerText = '✕ CERRAR';
+                actualizarCarpetaVisual();
+            } else {
+                drawer.classList.remove('open');
+                btnToggle.innerText = '⚙ Editor & Carpeta';
+            }
+        }
+
+        /* =====================================================================
+           CONFIGURACIÓN LOCAL (incluye colores y nombres de equipo)
+           ===================================================================== */
+        function aplicarColores(colores) {
+            for (const [variable, valor] of Object.entries(colores || {})) {
+                document.documentElement.style.setProperty(variable, valor);
+                const pickerId = PICKERS_COLOR[variable];
+                const picker = pickerId ? document.getElementById(pickerId) : null;
+                if (picker) picker.value = valor;
+            }
+        }
+
+        function cambiarColor(variable, valor) {
+            document.documentElement.style.setProperty(variable, valor);
+            coloresPersonalizados[variable] = valor;
+            guardarConfigLocal();
+        }
+
+        function guardarConfigLocal() {
+            escribirJSON('sar_delegado_config', {
+                actions: actions, players: players,
+                colores: coloresPersonalizados, homeName: homeName, awayName: awayName
+            });
+        }
+
+        function normalizarJugadores(lista) {
+            return (lista || []).map(p => ({
+                ...p,
+                totalSeconds: p.totalSeconds || 0,
+                attacksCount: p.attacksCount || 0,
+                exclusionSeconds: p.exclusionSeconds || 0
+            }));
+        }
+
+        function cargarConfigLocal() {
+            const cfg = leerJSON('sar_delegado_config', null);
+            if (!cfg || typeof cfg !== 'object') return;
+            if (Array.isArray(cfg.actions) && cfg.actions.length > 0) actions = cfg.actions;
+            if (Array.isArray(cfg.players)) players = normalizarJugadores(cfg.players);
+            if (cfg.colores && typeof cfg.colores === 'object') {
+                coloresPersonalizados = { ...cfg.colores };
+                aplicarColores(coloresPersonalizados);
+            }
+            if (typeof cfg.homeName === 'string' && cfg.homeName.trim()) homeName = cfg.homeName;
+            if (typeof cfg.awayName === 'string' && cfg.awayName.trim()) awayName = cfg.awayName;
+            document.getElementById('lbl-team-home').innerText = homeName;
+            document.getElementById('lbl-team-away').innerText = awayName;
+            renderRoster();
+            renderActions();
+        }
+
+        /* =====================================================================
+           PLANTILLAS / CARPETA
+           ===================================================================== */
+        function guardarPlantillaActual() {
+            const nombreEquipo = prompt('Nombre para este equipo / plantilla:', 'SAR Senior A');
+            if (!nombreEquipo || nombreEquipo.trim() === '') return;
+
+            const plantillas = leerJSON('sar_equipos_guardados', {});
+            // Se guardan los contadores a cero: una plantilla no debe arrastrar los minutos de otro partido
+            plantillas[nombreEquipo.trim()] = players.map(p => ({ ...p, totalSeconds: 0, attacksCount: 0, exclusionSeconds: 0 }));
+            if (!escribirJSON('sar_equipos_guardados', plantillas)) { alert('No se pudo guardar: almacenamiento lleno.'); return; }
+
+            cargarPlantillasGuardadasSelector();
+            document.getElementById('select-equipo-plantilla').value = nombreEquipo.trim();
+            alert(`¡Plantilla "${nombreEquipo.trim()}" guardada con éxito!`);
+        }
+
+        function cargarPlantillasGuardadasSelector() {
+            const select = document.getElementById('select-equipo-plantilla');
+            if (!select) return;
+            const plantillas = leerJSON('sar_equipos_guardados', {});
+            select.innerHTML = '<option value="">-- Mis Equipos --</option>';
+            for (const nombre in plantillas) {
+                const opt = document.createElement('option');
+                opt.value = nombre;
+                opt.innerText = nombre;
+                select.appendChild(opt);
+            }
+        }
+
+        function cambiarPlantillaEquipo(nombreEquipo) {
+            if (!nombreEquipo) return;
+            const plantillas = leerJSON('sar_equipos_guardados', {});
+            if (plantillas[nombreEquipo]) {
+                players = normalizarJugadores(JSON.parse(JSON.stringify(plantillas[nombreEquipo])));
+                renderRoster();
+            }
+        }
+
+        function guardarConfiguracionActual() {
+            const nombrePersonalizado = prompt('Nombre para guardar esta configuración:', 'Configuración ' + new Date().toLocaleDateString());
+            if (!nombrePersonalizado) return;
+
+            const carpeta = leerJSON('sar_carpeta_guardados', []);
+            carpeta.unshift({
+                id: 'cfg_' + Date.now(),
+                tipo: 'Configuración',
+                nombre: nombrePersonalizado,
+                fecha: new Date().toLocaleString(),
+                data: {
+                    actions: actions, players: players, colores: coloresPersonalizados,
+                    tamaniosTextos: leerCrudo('sar_tamanios_textos'), etiquetasTextos: leerCrudo('sar_etiquetas_textos')
+                }
+            });
+            if (!escribirJSON('sar_carpeta_guardados', carpeta)) { alert('No se pudo guardar: almacenamiento lleno.'); return; }
+            actualizarCarpetaVisual();
+            alert('¡Configuración guardada en la carpeta correctamente!');
+        }
+
+        function datosPartidoActuales() {
+            return {
+                homeName, awayName, homeGoals, awayGoals, seconds, eventsLog, players, timeoutsHome, timeoutsAway,
+                actions: actions,
+                colores: coloresPersonalizados,
+                tamaniosTextos: leerCrudo('sar_tamanios_textos'),
+                etiquetasTextos: leerCrudo('sar_etiquetas_textos'),
+                coordVersion: COORD_VERSION,
+                ataqueNumero: ataqueNumero,
+                tirosEx: tirosEx.map(t => ({ x: t.x, y: t.y, equipo: t.equipo, resultado: t.resultado, eventId: t.eventId || null }))
+            };
+        }
+
+        function guardarDatosPartidoActual() {
+            const nombrePersonalizado = prompt('Nombre para este partido:', `${homeName} vs ${awayName} (${new Date().toLocaleDateString()})`);
+            if (!nombrePersonalizado) return;
+
+            const carpeta = leerJSON('sar_carpeta_guardados', []);
+            carpeta.unshift({
+                id: 'match_' + Date.now(),
+                tipo: 'Partido',
+                nombre: nombrePersonalizado,
+                fecha: new Date().toLocaleString(),
+                data: JSON.parse(JSON.stringify(datosPartidoActuales()))
+            });
+            if (!escribirJSON('sar_carpeta_guardados', carpeta)) { alert('No se pudo guardar: almacenamiento lleno.'); return; }
+            actualizarCarpetaVisual();
+            alert('¡Datos del partido guardados en la carpeta correctamente!');
+        }
+
+        function actualizarCarpetaVisual() {
+            const container = document.getElementById('folder-items-container');
+            if (!container) return;
+
+            const carpeta = leerJSON('sar_carpeta_guardados', []);
+            container.innerHTML = '';
+
+            if (carpeta.length === 0) {
+                container.innerHTML = '<span style="color:var(--text-muted); font-size:0.7rem; text-align:center; padding: 5px;">La carpeta está vacía.</span>';
+                return;
+            }
+
+            carpeta.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'folder-item';
+                div.innerHTML = `
+                    <div class="folder-item-info">
+                        <span class="folder-item-title">[${escaparHTML(item.tipo)}] ${escaparHTML(item.nombre)}</span>
+                        <span class="folder-item-date">${escaparHTML(item.fecha)}</span>
+                    </div>
+                    <div class="folder-actions">
+                        <button class="btn btn-blue btn-sm" onclick="cargarItemCarpeta('${escaparHTML(item.id)}')">📂 Cargar</button>
+                        <button class="btn btn-red btn-sm" onclick="eliminarItemCarpeta('${escaparHTML(item.id)}')">🗑</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function cargarItemCarpeta(id) {
+            const carpeta = leerJSON('sar_carpeta_guardados', []);
+            const item = carpeta.find(x => x.id === id);
+            if (!item) return;
+
+            if (confirm(`¿Estás seguro de cargar "${item.nombre}"?`)) {
+                if (item.data && item.data.tamaniosTextos) {
+                    try { localStorage.setItem('sar_tamanios_textos', item.data.tamaniosTextos); } catch (e) {}
+                    aplicarTamaniosGuardados();
+                }
+                if (item.data && item.data.etiquetasTextos) {
+                    try { localStorage.setItem('sar_etiquetas_textos', item.data.etiquetasTextos); } catch (e) {}
+                    aplicarEtiquetasGuardadas();
+                }
+                if (item.data && item.data.colores && typeof item.data.colores === 'object') {
+                    coloresPersonalizados = { ...item.data.colores };
+                    aplicarColores(coloresPersonalizados);
+                }
+                if (item.data && item.data.actions) {
+                    actions = item.data.actions;
+                    renderActions();
+                }
+
+                if (item.tipo === 'Configuración') {
+                    players = normalizarJugadores(item.data.players);
+                    renderRoster();
+                    alert('¡Configuración cargada con éxito!');
+                } else if (item.tipo === 'Partido') {
+                    aplicarDatosPartido(item.data);
+                    alert('¡Partido cargado con éxito!');
+                }
+                toggleEditorDrawer();
+            }
+        }
+
+        function eliminarItemCarpeta(id) {
+            if (confirm('¿Eliminar este elemento de la carpeta?')) {
+                let carpeta = leerJSON('sar_carpeta_guardados', []);
+                carpeta = carpeta.filter(x => x.id !== id);
+                escribirJSON('sar_carpeta_guardados', carpeta);
+                actualizarCarpetaVisual();
+            }
+        }
+
+        function exportarConfigJSON() {
+            guardarConfigLocal();
+            const config = leerCrudo('sar_delegado_config') || '{}';
+            const blob = new Blob([config], { type: 'application/json' });
+            descargarBlob(blob, 'sar_delegado_config.json');
+        }
+
+        function importarConfigJSON() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = event => {
+                    try {
+                        const parsed = JSON.parse(event.target.result);          // se valida ANTES de guardar
+                        if (!parsed || typeof parsed !== 'object') throw new Error('formato');
+                        if (!escribirJSON('sar_delegado_config', parsed)) throw new Error('almacenamiento');
+                        cargarConfigLocal();
+                        alert('¡Configuración importada correctamente!');
+                    } catch (err) { alert('Error al importar el archivo JSON'); }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        /* =====================================================================
+           PLANTILLA / JUGADORES
+           ===================================================================== */
+        function renderRoster() {
+            const field = document.getElementById('roster-field'), bench = document.getElementById('roster-bench');
+            field.innerHTML = ''; bench.innerHTML = '';
+
+            if (players.length > 0 && !players.some(p => p.id === selectedPlayerId)) selectedPlayerId = players[0].id;
+
+            players.forEach(p => {
+                const card = document.createElement('div');
+                const isExcluded = (p.exclusionSeconds || 0) > 0;
+                card.className = `player-card ${p.id === selectedPlayerId ? 'selected' : ''} ${!p.onField ? 'bench' : ''} ${isExcluded ? 'excluded' : ''}`;
+                card.onclick = () => { selectedPlayerId = p.id; renderRoster(); };
+
+                const minSec = formatearSegundos(p.totalSeconds || 0);
+                let badgeHtml = `<div class="player-time-badge" id="p-time-${p.id}">⏱ ${minSec} | ⚔ ${p.attacksCount || 0}</div>`;
+                if (isExcluded) {
+                    badgeHtml += ` <div class="player-exclusion-badge" id="p-exc-${p.id}">2m: ${formatearSegundos(p.exclusionSeconds)}</div>`;
+                }
+
+                card.innerHTML = `
+                    <div class="player-info">
+                        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                            <span class="player-number editable-title-wrap"><span id="p-num-${p.id}">#${escaparHTML(p.number)}</span><button class="btn-edit-label" onclick="event.stopPropagation(); ajustarTamanioElemento('p-num-${p.id}')" title="Ajustar tamaño dorsal">🔍</button></span>
+                            <span class="player-name editable-title-wrap"><span id="p-name-${p.id}">${escaparHTML(p.name)}</span><button class="btn-edit-label" onclick="event.stopPropagation(); ajustarTamanioElemento('p-name-${p.id}')" title="Ajustar tamaño nombre">🔍</button></span>
+                            <div class="player-actions-group">
+                                <span class="editable-title-wrap"><button class="p-action-btn p-btn-exc" id="btn-exc-p-${p.id}" title="Exclusión 2m" onclick="event.stopPropagation(); aplicarExclusion(${p.id})">2m</button><button class="btn-edit-label" id="p-exc-btn-${p.id}" onclick="event.stopPropagation(); ajustarTamanioElemento('btn-exc-p-${p.id}')" title="Ajustar tamaño 2m">🔍</button></span>
+                                <button class="p-action-btn p-btn-edit" title="Editar jugador" onclick="event.stopPropagation(); editarJugador(${p.id})">✏️</button>
+                                <span class="editable-title-wrap"><button class="p-action-btn p-btn-toggle" id="btn-toggle-p-${p.id}" title="Cambiar a Pista/Banquillo" onclick="event.stopPropagation(); alternarEstadoJugador(${p.id})">⇄</button><button class="btn-edit-label" id="p-toggle-btn-${p.id}" onclick="event.stopPropagation(); ajustarTamanioElemento('btn-toggle-p-${p.id}')" title="Ajustar tamaño ⇄">🔍</button></span>
+                                <button class="p-action-btn p-btn-delete" title="Eliminar jugador" onclick="event.stopPropagation(); eliminarJugador(${p.id})">×</button>
+                            </div>
+                        </div>
+                        ${badgeHtml}
+                    </div>
+                `;
+                (p.onField ? field : bench).appendChild(card);
+            });
+            guardarConfigLocal();
+            aplicarTamaniosGuardados();
+        }
+
+        /* Actualiza solo los contadores de tiempo (sin reconstruir todo el DOM cada segundo) */
+        function actualizarBadgesJugadores() {
+            let rehacer = false;
+            players.forEach(p => {
+                const t = document.getElementById('p-time-' + p.id);
+                if (t) t.innerText = `⏱ ${formatearSegundos(p.totalSeconds || 0)} | ⚔ ${p.attacksCount || 0}`;
+                const excluido = (p.exclusionSeconds || 0) > 0;
+                const badge = document.getElementById('p-exc-' + p.id);
+                if (excluido !== !!badge) rehacer = true;          // cambió el estado de exclusión: hay que repintar tarjeta
+                else if (badge) badge.innerText = `2m: ${formatearSegundos(p.exclusionSeconds)}`;
+            });
+            if (rehacer) renderRoster();
+        }
+
+        function agregarJugador() {
+            const num = prompt('Dorsal del jugador:');
+            if (num === null) return;
+            const nombre = prompt('Nombre del jugador:') || `Jugador #${num}`;
+            let id = Date.now();
+            while (players.some(p => p.id === id)) id++;
+            players.push({ id, number: parseInt(num) || 0, name: nombre, onField: true, totalSeconds: 0, attacksCount: 0, exclusionSeconds: 0 });
+            selectedPlayerId = id;
+            renderRoster();
+        }
+
+        function editarJugador(id) {
+            const p = players.find(x => x.id === id);
+            if (!p) return;
+            const nuevoNum = prompt('Editar dorsal:', p.number);
+            if (nuevoNum === null) return;
+            const nuevoNombre = prompt('Editar nombre:', p.name);
+            if (nuevoNombre === null) return;
+            p.number = parseInt(nuevoNum) || p.number;
+            p.name = nuevoNombre.trim() || p.name;
+            renderRoster();
+        }
+
+        function eliminarJugador(id) {
+            const p = players.find(x => x.id === id);
+            if (!p) return;
+            if (confirm(`¿Eliminar al jugador #${p.number} - ${p.name} de la plantilla?`)) {
+                players = players.filter(x => x.id !== id);
+                renderRoster();
+            }
+        }
+
+        function alternarEstadoJugador(id) {
+            const p = players.find(x => x.id === id);
+            if (!p) return;
+            p.onField = !p.onField;
+            // Los cambios se registran en la cronología solo cuando el partido ya está en marcha
+            if (timerInterval !== null || seconds > 0) {
+                crearEvento({
+                    lado: 'home', categoria: 'CAMBIO', tipo: 'CAMBIO',
+                    accion: p.onField ? 'Entra a pista' : 'Sale a banquillo',
+                    dorsal: p.number, jugadorId: p.id, jugador: p.name
+                });
+                renderFeed();
+            }
+            renderRoster();
+        }
+
+        function aplicarExclusion(id) {
+            const p = players.find(x => x.id === id);
+            if (!p) return;
+            p.exclusionSeconds = 120; // 2 minutos de exclusión
+            crearEvento({
+                lado: 'home', categoria: 'DEFENSA', tipo: 'EXCLUSION', accion: 'Exclusión 2m',
+                dorsal: p.number, jugadorId: p.id, jugador: p.name
+            });
+            renderFeed();
+            renderRoster();
+        }
+
+        function pedirTiempoMuerto(equipo) {
+            if (equipo === 'home') {
+                if (timeoutsHome <= 0) {
+                    alert('El equipo SAR ya ha gastado su tiempo muerto.');
+                    return;
+                }
+                timeoutsHome--;
+            } else {
+                if (timeoutsAway <= 0) {
+                    alert('El equipo Rival ya ha gastado su tiempo muerto.');
+                    return;
+                }
+                timeoutsAway--;
+            }
+            actualizarTimeoutsUI();
+
+            const lado = equipo === 'home' ? 'home' : 'away';
+            const nombreEq = nombreEquipoPorLado(lado);
+            crearEvento({
+                lado, categoria: 'TIEMPO_MUERTO', tipo: 'TIEMPO_MUERTO',
+                accion: `⏱ Tiempo Muerto (${nombreEq})`, dorsal: '-', jugador: 'Equipo'
+            });
+            renderFeed();
+        }
+
+        function actualizarTimeoutsUI() {
+            document.getElementById('count-timeout-home').innerText = timeoutsHome;
+            document.getElementById('count-timeout-away').innerText = timeoutsAway;
+        }
+
+        /* =====================================================================
+           ACCIONES
+           ===================================================================== */
+        function renderActions() {
+            const gridAttack = document.getElementById('action-grid-attack');
+            const gridDefense = document.getElementById('action-grid-defense');
+            gridAttack.innerHTML = ''; gridDefense.innerHTML = '';
+
+            actions.forEach(a => {
+                const wrap = document.createElement('div');
+                wrap.className = 'action-btn-wrapper';
+
+                const btn = document.createElement('button');
+                btn.className = `action-btn ${selectedAction === a.name ? 'selected' : ''}`;
+                btn.id = `act-btn-${a.id}`;
+                btn.innerHTML = `<span id="txt-act-${a.id}">${escaparHTML(a.name)}</span>`;
+
+                btn.onclick = () => {
+                    selectedAction = a.name;
+                    renderActions();
+                };
+
+                const editSizeBtn = document.createElement('button');
+                editSizeBtn.className = 'btn-edit-label';
+                editSizeBtn.innerHTML = '🔍';
+                editSizeBtn.title = 'Ajustar tamaño';
+                editSizeBtn.style.position = 'absolute';
+                editSizeBtn.style.left = '2px';
+                editSizeBtn.style.bottom = '1px';
+                editSizeBtn.style.fontSize = '9px';
+                editSizeBtn.style.color = '#fff';
+                editSizeBtn.onclick = (e) => { e.stopPropagation(); ajustarTamanioElemento(`txt-act-${a.id}`); };
+
+                const del = document.createElement('button');
+                del.className = 'action-del-btn';
+                del.innerText = '×';
+                del.onclick = (e) => { e.stopPropagation(); eliminarAccion(a.id); };
+
+                wrap.appendChild(btn);
+                wrap.appendChild(editSizeBtn);
+                wrap.appendChild(del);
+
+                if (a.category === 'attack') gridAttack.appendChild(wrap);
+                else gridDefense.appendChild(wrap);
+            });
+            guardarConfigLocal();
+            aplicarTamaniosGuardados();
+        }
+
+        function crearNuevaAccion() {
+            const cat = prompt('Categoría (escribe "ataque" o "defensa"):', 'ataque');
+            if (!cat) return;
+            const normalizedCat = cat.toLowerCase().includes('def') ? 'defense' : 'attack';
+            const nombre = prompt(`Nueva etiqueta de ${normalizedCat.toUpperCase()}:`);
+            if (!nombre || nombre.trim() === '') return;
+
+            actions.push({ id: 'act_' + Date.now(), category: normalizedCat, name: nombre.trim() });
+            selectedAction = nombre.trim();
+            renderActions();
+        }
+
+        function eliminarAccion(id) {
+            if (confirm('¿Eliminar esta etiqueta de acción?')) {
+                actions = actions.filter(a => a.id !== id);
+                renderActions();
+            }
+        }
+
+        /* Clasificación explícita de cada acción (ya no se usa includes('gol') a ciegas) */
+        function clasificarAccion(nombre) {
+            const n = String(nombre || '').toLowerCase();
+            if (/\bgol(es)?\b/.test(n)) return 'GOL';
+            if (/asistencia/.test(n)) return 'ASISTENCIA';
+            if (/exclusi[oó]n/.test(n)) return 'EXCLUSION';
+            if (/fallo/.test(n) || (/parada/.test(n) && !/portero/.test(n))) return 'FALLO';
+            return 'OTRO';
+        }
+
+        /* =====================================================================
+           CRONÓMETRO (basado en Date.now: no se atrasa si el móvil bloquea la pantalla)
+           ===================================================================== */
+        function rebasarCronometro() {
+            timerStartMs = Date.now();
+            timerStartSeconds = seconds;
+        }
+
+        function tickCronometro() {
+            const objetivo = timerStartSeconds + Math.floor((Date.now() - timerStartMs) / 1000);
+            const delta = objetivo - seconds;
+            if (delta <= 0) return;
+            for (let i = 0; i < delta; i++) {
+                players.forEach(p => {
+                    if (p.onField) p.totalSeconds = (p.totalSeconds || 0) + 1;
+                    if ((p.exclusionSeconds || 0) > 0) p.exclusionSeconds--;
+                });
+            }
+            seconds = objetivo;
+            actualizarDisplayTiempo();
+            actualizarBadgesJugadores();
+            if (seconds - ultimoAutoguardado >= 5) autoguardarPartido();
+        }
+
+        function toggleTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                autoguardarPartido();
+            } else {
+                rebasarCronometro();
+                timerInterval = setInterval(tickCronometro, 250);
+            }
+        }
+
+        function actualizarDisplayTiempo() {
+            document.getElementById('timer-display').innerText = formatearSegundos(seconds);
+        }
+
+        function editarTiempoManual(e) {
+            const nuevo = prompt('Ajustar tiempo (MM:SS):', document.getElementById('timer-display').innerText);
+            if (nuevo && nuevo.includes(':')) {
+                const partes = nuevo.split(':');
+                seconds = Math.max(0, (parseInt(partes[0]) || 0) * 60 + (parseInt(partes[1]) || 0));
+                rebasarCronometro();
+                actualizarDisplayTiempo();
+                autoguardarPartido();
+            }
+        }
+
+        function actualizarMarcador() {
+            document.getElementById('score-display').innerText = `${String(homeGoals).padStart(2, '0')} - ${String(awayGoals).padStart(2, '0')}`;
+        }
+
+        function editarMarcadorDirecto() {
+            const res = prompt('Ajustar marcador (LOCAL - RIVAL):', `${homeGoals}-${awayGoals}`);
+            if (res && res.includes('-')) {
+                const partes = res.split('-');
+                homeGoals = Math.max(0, parseInt(partes[0]) || 0);
+                awayGoals = Math.max(0, parseInt(partes[1]) || 0);
+                actualizarMarcador();
+                autoguardarPartido();
+            }
+        }
+
+        function editarNombreEquipo(tipo) {
+            if (tipo === 'home') {
+                const nom = prompt('Nombre equipo local:', homeName);
+                if (nom && nom.trim()) { homeName = nom.trim(); document.getElementById('lbl-team-home').innerText = homeName; }
+            } else {
+                const nom = prompt('Nombre equipo rival:', awayName);
+                if (nom && nom.trim()) { awayName = nom.trim(); document.getElementById('lbl-team-away').innerText = awayName; }
+            }
+            guardarConfigLocal();
+            renderFeed();     // los eventos ya registrados muestran el nombre nuevo (se identifican por "lado", no por el texto)
+        }
+
+        /* =====================================================================
+           EVENTOS: CREACIÓN CENTRALIZADA
+           ===================================================================== */
+        let eventSeq = 0;
+        function nuevoIdEvento() { return Date.now() * 100 + (eventSeq++ % 100); }
+
+        /* Crea y registra un evento con TODOS los campos (incluidos los nuevos para Excel) */
+        function crearEvento(datos) {
+            const ev = Object.assign({
+                id: nuevoIdEvento(),
+                tiempo: formatearSegundos(seconds),
+                segundos: seconds,
+                marcador: `${String(homeGoals).padStart(2, '0')} - ${String(awayGoals).padStart(2, '0')}`,
+                golesLocal: homeGoals,
+                golesRival: awayGoals,
+                lado: 'home',
+                equipo: '',
+                categoria: '',
+                tipo: 'OTRO',
+                accion: '',
+                dorsal: '-',
+                jugadorId: null,
+                jugador: '',
+                zonaPorteriaEscrita: '-',
+                golX: '-', golY: '-',
+                zonaCampo: '-',
+                campoX: '-', campoY: '-',
+                enPista: players.filter(p => p.onField).map(p => p.number).join('-'),
+                numEnPista: players.filter(p => p.onField).length,
+                excluidos: players.filter(p => (p.exclusionSeconds || 0) > 0).map(p => p.number).join('-'),
+                ataqueNum: ataqueEnCurso ? ataqueNumero : '',
+                inicioAtaque: '', duracionAtaque: ''
+            }, datos);
+            if (!datos.equipo) ev.equipo = nombreEquipoPorLado(ev.lado);
+            eventsLog.unshift(ev);
+            return ev;
+        }
+
+        /* Adapta eventos guardados con versiones anteriores del código */
+        function normalizarEvento(e) {
+            if (!e.lado) {
+                if (e.categoria === 'EN_CONTRA') e.lado = 'away';
+                else if (e.categoria === 'MAPA_CAMPO' && e.jugador === 'RIVAL') e.lado = 'away';
+                else if (e.equipo === awayName && e.equipo !== homeName) e.lado = 'away';
+                else e.lado = 'home';
+            }
+            if (!e.tipo) {
+                if (e.categoria === 'EN_CONTRA') e.tipo = 'GOL_ENCAJADO';
+                else if (e.categoria === 'MAPA_CAMPO') e.tipo = 'TIRO_MAPA';
+                else if (e.categoria === 'TIEMPO_MUERTO') e.tipo = 'TIEMPO_MUERTO';
+                else if (/^fin ataque/i.test(e.accion || '')) e.tipo = 'FIN_ATAQUE';
+                else e.tipo = clasificarAccion(e.accion);
+            }
+            if (e.segundos === undefined) {
+                const p = String(e.tiempo || '0:0').split(':');
+                e.segundos = (parseInt(p[0]) || 0) * 60 + (parseInt(p[1]) || 0);
+            }
+            if (e.golesLocal === undefined) {
+                const m = String(e.marcador || '').match(/(\d+)\s*-\s*(\d+)/);
+                e.golesLocal = m ? parseInt(m[1]) : '';
+                e.golesRival = m ? parseInt(m[2]) : '';
+            }
+            if (e.jugadorId === undefined) e.jugadorId = null;
+            ['enPista', 'excluidos', 'ataqueNum', 'inicioAtaque', 'duracionAtaque'].forEach(k => { if (e[k] === undefined) e[k] = ''; });
+            if (e.numEnPista === undefined) e.numEnPista = '';
+            if (e.golX === undefined) { e.golX = '-'; e.golY = '-'; }
+            if (e.tipo === 'TIRO_MAPA') {
+                if (!e.resultado) {
+                    const r = String(e.accion || '').match(/\((\w+)\)/);
+                    e.resultado = r ? r[1].toLowerCase() : 'fuera';
+                }
+                if (e.campoX !== '-' && e.campoY !== '-') e.zonaCampo = obtenerZonaTacticaCampo(Number(e.campoX), Number(e.campoY));
+                e.zonaPorteriaEscrita = '-';
+            } else if (e.zonaCampo === undefined) {
+                e.zonaCampo = (e.campoX !== undefined && e.campoX !== '-' && e.campoY !== '-')
+                    ? obtenerZonaTacticaCampo(Number(e.campoX), Number(e.campoY)) : '-';
+            }
+            if (e.zonaPorteriaEscrita === 'Centro') e.zonaPorteriaEscrita = 'Media Centro';   // unifica el nombre de la zona central
+            return e;
+        }
+
+        /* =====================================================================
+           ATAQUE EN VIVO
+           ===================================================================== */
+        function pintarEstadoAtaque() {
+            const badge = document.getElementById('ataque-estado-badge');
+            const btnIniciar = document.getElementById('btn-iniciar-ataque');
+            const panelCard = document.getElementById('ataque-panel-card');
+            const titleLabel = document.getElementById('ataque-title-label');
+            const base = etiquetaBase('ataque-title-label', '⚔ ATAQUE EN VIVO');
+
+            if (ataqueEnCurso) {
+                badge.innerText = 'EN CURSO';
+                badge.style.background = 'var(--accent-green)';
+                btnIniciar.classList.add('btn-ataque-activo');
+                btnIniciar.innerText = '🔴 FINALIZAR ATAQUE';
+                panelCard.classList.add('ataque-panel-activo');
+                titleLabel.innerHTML = escaparHTML(base) + ' <span style="color:var(--accent-green);">✔ (CLICADO)</span>';
+            } else {
+                badge.innerText = 'Inactivo';
+                badge.style.background = 'var(--accent-blue)';
+                btnIniciar.classList.remove('btn-ataque-activo');
+                btnIniciar.innerText = '▶ Iniciar';
+                panelCard.classList.remove('ataque-panel-activo');
+                titleLabel.innerText = base;
+            }
+        }
+
+        function registrarInicioAtaque() {
+            ataqueEnCurso = !ataqueEnCurso;
+            pintarEstadoAtaque();
+
+            if (ataqueEnCurso) {
+                ataqueNumero++;
+                ataqueInicioSeg = seconds;
+                players.forEach(p => {
+                    if (p.onField) p.attacksCount = (p.attacksCount || 0) + 1;
+                });
+                renderRoster();
+            } else {
+                crearEvento({
+                    lado: 'home', categoria: 'ATAQUE', tipo: 'FIN_ATAQUE', accion: 'Fin Ataque',
+                    dorsal: '-', jugador: 'Equipo (Pista)',
+                    ataqueNum: ataqueNumero, inicioAtaque: ataqueInicioSeg, duracionAtaque: Math.max(0, seconds - ataqueInicioSeg)
+                });
+                renderFeed();
+            }
+        }
+
+        /* =====================================================================
+           REGISTRO DE EVENTOS
+           ===================================================================== */
+        function handleCourtClick(e) {
+            const rect = e.currentTarget.getBoundingClientRect();
+            courtCoords.x = Math.round(((e.clientX - rect.left) / rect.width) * 300);
+            courtCoords.y = Math.round(((e.clientY - rect.top) / rect.height) * 200);
+            document.getElementById('court-marker').setAttribute('cx', courtCoords.x);
+            document.getElementById('court-marker').setAttribute('cy', courtCoords.y);
+        }
+
+        function handleGoalClick(e) {
+            const rect = e.currentTarget.getBoundingClientRect();
+            goalCoords.x = Math.round(((e.clientX - rect.left) / rect.width) * 300);
+            goalCoords.y = Math.round(((e.clientY - rect.top) / rect.height) * 200);
+            document.getElementById('goal-marker').setAttribute('cx', goalCoords.x);
+            document.getElementById('goal-marker').setAttribute('cy', goalCoords.y);
+        }
+
+        function reiniciarMarcadoresClic() {
+            goalCoords = { x: -20, y: -20 }; courtCoords = { x: -20, y: -20 };
+            document.getElementById('goal-marker').setAttribute('cx', -20);
+            document.getElementById('goal-marker').setAttribute('cy', -20);
+            document.getElementById('court-marker').setAttribute('cx', -20);
+            document.getElementById('court-marker').setAttribute('cy', -20);
+        }
+
+        function registerEvent() {
+            const p = players.find(x => x.id === selectedPlayerId);
+            if (!p) return alert('Selecciona un jugador');
+            const categoriaActiva = actions.find(a => a.name === selectedAction)?.category || 'attack';
+            const tipo = clasificarAccion(selectedAction);
+
+            if (tipo === 'GOL') homeGoals++;
+            actualizarMarcador();
+
+            // Ahora se guarda la ubicación en portería para CUALQUIER acción en la que se haya marcado (antes solo en goles)
+            let zonaPorteria = '-', gX = '-', gY = '-', zonaCampo = '-', cX = '-', cY = '-';
+            if (goalCoords.x >= 0) {
+                zonaPorteria = traducirZonaCoordsEspejo(goalCoords.x, goalCoords.y);
+                gX = goalCoords.x; gY = goalCoords.y;
+            }
+            if (courtCoords.x >= 0) {
+                cX = courtCoords.x; cY = courtCoords.y;
+                zonaCampo = obtenerZonaTacticaCampo(cX, cY);
+            }
+
+            crearEvento({
+                lado: 'home', categoria: categoriaActiva.toUpperCase(), tipo,
+                accion: selectedAction, dorsal: p.number, jugadorId: p.id, jugador: p.name,
+                zonaPorteriaEscrita: zonaPorteria, golX: gX, golY: gY,
+                zonaCampo, campoX: cX, campoY: cY
+            });
+
+            reiniciarMarcadoresClic();
+            renderFeed();
+        }
+
+        function abrirModalGolRival() { document.getElementById('modal-gol-rival').classList.add('active'); }
+        function cerrarModalGolRival() { document.getElementById('modal-gol-rival').classList.remove('active'); }
+
+        function guardarGolRivalConZona(zonaTexto) {
+            if (zonaTexto === 'Centro') zonaTexto = 'Media Centro';   // mismo nombre que usan los goles propios
+            awayGoals++;
+            actualizarMarcador();
+
+            let cX = '-', cY = '-', zonaCampo = '-';
+            if (courtCoords.x >= 0) {
+                cX = courtCoords.x; cY = courtCoords.y;
+                zonaCampo = obtenerZonaTacticaCampo(cX, cY);
+            }
+
+            crearEvento({
+                lado: 'away', categoria: 'EN_CONTRA', tipo: 'GOL_ENCAJADO', accion: 'Gol Encajado',
+                dorsal: '-', jugador: 'Rival', zonaPorteriaEscrita: zonaTexto,
+                zonaCampo, campoX: cX, campoY: cY
+            });
+
+            reiniciarMarcadoresClic();
+            renderFeed();
+            cerrarModalGolRival();
+        }
+
+        function traducirZonaCoordsEspejo(x, y) {
+            const col = x < 106 ? 'Derecha' : x < 193 ? 'Centro' : 'Izquierda';
+            const row = y < 84 ? 'Superior' : y < 142 ? 'Media' : 'Inferior';
+            return `${row} ${col}`;
+        }
+
+        function eliminarEvento(id) {
+            const index = eventsLog.findIndex(e => e.id === id);
+            if (index === -1) return;
+            const ev = eventsLog[index];
+
+            if (ev.tipo === 'GOL' && ev.lado === 'home') {
+                if (homeGoals > 0) homeGoals--;
+            } else if (ev.tipo === 'GOL_ENCAJADO') {
+                if (awayGoals > 0) awayGoals--;
+            } else if (ev.tipo === 'TIRO_MAPA') {
+                // el tiro del mapa y su evento van siempre unidos
+                for (let i = tirosEx.length - 1; i >= 0; i--) {
+                    if (tirosEx[i].eventId === ev.id) {
+                        if (tirosEx[i].elemento) tirosEx[i].elemento.remove();
+                        tirosEx.splice(i, 1);
+                    }
+                }
+            } else if (ev.tipo === 'EXCLUSION') {
+                const p = players.find(x => x.id === ev.jugadorId);
+                if (p && (p.exclusionSeconds || 0) > 0) { p.exclusionSeconds = 0; renderRoster(); }
+            } else if (ev.tipo === 'TIEMPO_MUERTO') {
+                if (ev.lado === 'home' && timeoutsHome < MAX_TIEMPOS_MUERTOS) timeoutsHome++;
+                else if (ev.lado === 'away' && timeoutsAway < MAX_TIEMPOS_MUERTOS) timeoutsAway++;
+                actualizarTimeoutsUI();
+            }
+            actualizarMarcador();
+
+            eventsLog.splice(index, 1);
+            renderFeed();
+            if (typeof actualizarVistaMapaEx === 'function') actualizarVistaMapaEx();
+        }
+
+        function renderFeed() {
+            const feed = document.getElementById('event-feed');
+            feed.innerHTML = '';
+            eventsLog.forEach((e) => {
+                const card = document.createElement('div');
+                const lado = e.lado || 'home';
+                let cardClass = lado === 'away' ? 'rival' : 'goal';
+                if (e.tipo === 'TIEMPO_MUERTO') cardClass = 'timeout';
+                else if (e.tipo === 'CAMBIO') cardClass = '';
+
+                card.className = `event-card ${cardClass}`;
+                card.innerHTML = `
+                    <div style="flex-grow: 1;"><strong>[${escaparHTML(nombreEquipoPorLado(lado))}] ${escaparHTML(e.accion)}</strong> (${escaparHTML(e.jugador)}) <span style="color: var(--text-muted); font-size: 0.6rem;">${escaparHTML(e.tiempo)}</span></div>
+                    <button class="event-delete-btn" onclick="eliminarEvento(${Number(e.id)})">🗑 Borrar</button>
+                `;
+                feed.appendChild(card);
+            });
+            autoguardarPartido();
+        }
+
+        /* =====================================================================
+           MAPA DE TIROS: DATOS COMUNES (un tiro del mapa = UN solo dato)
+           ===================================================================== */
+        function limpiarTirosMapa() {
+            tirosEx.forEach(t => { if (t.elemento) t.elemento.remove(); });
+            tirosEx = [];
+        }
+
+        function crearMarcadorMapa(t) {
+            const cancha = document.getElementById('cancha-ex');
+            const color = t.resultado === 'gol' ? '#22c55e' : t.resultado === 'paradon' ? '#3b82f6' : '#ef4444';
+            const m = document.createElement('div');
+            m.style.cssText = `position:absolute;left:${(t.x / 300) * 100}%;top:${(t.y / 200) * 100}%;width:12px;height:12px;` +
+                `transform:translate(-50%,-50%);background-color:${color};border-radius:50%;border:2px solid #fff;` +
+                `box-shadow:0 0 4px rgba(0,0,0,0.5);z-index:5;`;
+            cancha.appendChild(m);
+            const entrada = { x: t.x, y: t.y, equipo: t.equipo, resultado: t.resultado, eventId: t.eventId || null, elemento: m };
+            tirosEx.push(entrada);
+            return entrada;
+        }
+
+        /* Lanzamientos de un equipo con coordenadas, sin duplicados:
+           - los del mapa flotante salen SOLO de tirosEx
+           - los del panel principal salen de la cronología (solo goles, fallos y goles encajados; no asistencias, recuperaciones, etc.) */
+        function obtenerTirosParaZonas(lado) {
+            const salida = [];
+            tirosEx.forEach(t => {
+                if ((t.equipo === 'RIVAL' ? 'away' : 'home') !== lado) return;
+                const ev = t.eventId ? eventsLog.find(e => e.id === t.eventId) : null;
+                salida.push({
+                    x: t.x, y: t.y, resultado: t.resultado, origen: 'Mapa flotante', eventId: t.eventId || '',
+                    segundos: ev ? ev.segundos : '', tiempo: ev ? ev.tiempo : '',
+                    golesLocal: ev ? ev.golesLocal : '', golesRival: ev ? ev.golesRival : '',
+                    jugador: ev ? ev.jugador : nombreEquipoPorLado(lado), dorsal: '-',
+                    accion: ev ? ev.accion : `Tiro (${String(t.resultado).toUpperCase()})`
+                });
+            });
+            eventsLog.forEach(e => {
+                if (e.lado !== lado || e.campoX === '-' || e.campoY === '-' || e.campoX === undefined) return;
+                const x = Number(e.campoX), y = Number(e.campoY);
+                let resultado = null;
+                if (e.tipo === 'GOL' || e.tipo === 'GOL_ENCAJADO') resultado = 'gol';
+                else if (e.tipo === 'FALLO') resultado = 'fallo';
+                if (!resultado) return;
+                salida.push({
+                    x, y, resultado, origen: 'Panel principal', eventId: e.id, segundos: e.segundos, tiempo: e.tiempo,
+                    golesLocal: e.golesLocal, golesRival: e.golesRival, jugador: e.jugador, dorsal: e.dorsal, accion: e.accion
+                });
+            });
+            return salida;
+        }
+
+        function calcularSectores(mapa, total) {
+            return SECTORES_MAPA.map(sec => {
+                let t = 0;
+                sec.claves.forEach(k => { if (mapa[k]) t += mapa[k].total; });
+                return { titulo: sec.titulo, claves: sec.claves, total: t, densidad: total > 0 ? t / total : 0 };
+            });
+        }
+
+        function calcularZonasLado(lado) {
+            const mapa = {};
+            ZONAS_TACTICAS.forEach(z => { mapa[z] = { total: 0, goles: 0, paradas: 0, fuera: 0 }; });
+            let total = 0;
+            obtenerTirosParaZonas(lado).forEach(t => {
+                const s = mapa[obtenerZonaTacticaCampo(t.x, t.y)];
+                if (!s) return;
+                s.total++; total++;
+                if (t.resultado === 'gol') s.goles++;
+                else if (t.resultado === 'paradon') s.paradas++;
+                else s.fuera++;
+            });
+            return { mapa, total };
+        }
+
+        /* Convierte partidos guardados con la versión antigua (píxeles) a la escala 300x200 */
+        function convertirCoordMapaLegacy(lista, eventos) {
+            const xs = lista.map(t => t.x).concat(eventos.filter(e => e.categoria === 'MAPA_CAMPO').map(e => Number(e.campoX) || 0));
+            const maxX = xs.length ? Math.max(...xs) : 0;
+            const ancho = maxX > 300 ? 424 : 300;      // estimación del ancho del mapa en que se registró
+            const f = (x, y) => [Math.min(300, Math.max(0, Math.round(x * 300 / ancho))), Math.min(200, Math.max(0, Math.round(y * 200 / 206)))];
+            lista.forEach(t => { const [x, y] = f(t.x, t.y); t.x = x; t.y = y; });
+            eventos.forEach(e => {
+                if (e.categoria === 'MAPA_CAMPO' && e.campoX !== '-' && e.campoY !== '-') {
+                    const [x, y] = f(Number(e.campoX), Number(e.campoY)); e.campoX = x; e.campoY = y;
+                }
+            });
+        }
+
+        function vincularTirosConEventos() {
+            const usados = new Set(tirosEx.filter(t => t.eventId).map(t => t.eventId));
+            tirosEx.forEach(t => {
+                if (t.eventId) return;
+                const lado = t.equipo === 'RIVAL' ? 'away' : 'home';
+                const ev = eventsLog.find(e => e.tipo === 'TIRO_MAPA' && !usados.has(e.id) && e.lado === lado &&
+                    Number(e.campoX) === t.x && Number(e.campoY) === t.y);
+                if (ev) { t.eventId = ev.id; usados.add(ev.id); }
+            });
+        }
+
+        /* =====================================================================
+           CARGA DE UN PARTIDO (carpeta o autoguardado)
+           ===================================================================== */
+        function aplicarDatosPartido(data) {
+            homeName = data.homeName || 'SAR';
+            awayName = data.awayName || 'RIVAL';
+            homeGoals = data.homeGoals || 0;
+            awayGoals = data.awayGoals || 0;
+            seconds = data.seconds || 0;
+            eventsLog = (data.eventsLog || []).map(e => ({ ...e }));
+            if (Array.isArray(data.players)) players = normalizarJugadores(data.players);
+            timeoutsHome = data.timeoutsHome !== undefined ? data.timeoutsHome : MAX_TIEMPOS_MUERTOS;
+            timeoutsAway = data.timeoutsAway !== undefined ? data.timeoutsAway : MAX_TIEMPOS_MUERTOS;
+
+            limpiarTirosMapa();
+            const lista = (data.tirosEx || []).map(t => ({ ...t }));
+            if (data.coordVersion !== COORD_VERSION) convertirCoordMapaLegacy(lista, eventsLog);
+            eventsLog.forEach(normalizarEvento);
+            lista.forEach(t => crearMarcadorMapa(t));
+            vincularTirosConEventos();
+
+            if (timerInterval) rebasarCronometro();
+            ataqueEnCurso = false;
+            ataqueNumero = Number.isFinite(data.ataqueNumero) ? data.ataqueNumero
+                : Math.max(0, ...eventsLog.map(e => Number(e.ataqueNum) || 0), eventsLog.filter(e => e.tipo === 'FIN_ATAQUE').length);
+            pintarEstadoAtaque();
+
+            document.getElementById('lbl-team-home').innerText = homeName;
+            document.getElementById('lbl-team-away').innerText = awayName;
+            actualizarMarcador();
+            actualizarDisplayTiempo();
+            actualizarTimeoutsUI();
+            renderFeed();
+            renderRoster();
+            if (typeof actualizarVistaMapaEx === 'function') actualizarVistaMapaEx();
+        }
+
+        /* =====================================================================
+           AUTOGUARDADO DEL PARTIDO EN CURSO
+           ===================================================================== */
+        function autoguardarPartido() {
+            ultimoAutoguardado = seconds;
+            if (eventsLog.length === 0 && seconds === 0) return;
+            escribirJSON(CLAVE_AUTOGUARDADO, datosPartidoActuales());
+        }
+
+        function recuperarPartidoAutoguardado() {
+            const d = leerJSON(CLAVE_AUTOGUARDADO, null);
+            if (!d || !((d.eventsLog && d.eventsLog.length) || d.seconds > 0)) return;
+            const resumen = `${d.homeName || 'SAR'} ${d.homeGoals || 0} - ${d.awayGoals || 0} ${d.awayName || 'RIVAL'} (${formatearSegundos(d.seconds || 0)})`;
+            if (confirm(`Se encontró un partido en curso sin cerrar:\n${resumen}\n\n¿Quieres recuperarlo?`)) {
+                aplicarDatosPartido(d);
+            }
+        }
+
+        /* =====================================================================
+           ANALÍTICA
+           ===================================================================== */
+        function abrirModalEstadisticas() {
+            calcularEstadisticasGlobales();
+            poblarSelectorJugadoresAnalisis();
+            document.getElementById('modal-estadisticas').classList.add('active');
+        }
+
+        function cerrarModalEstadisticas() {
+            document.getElementById('modal-estadisticas').classList.remove('active');
+        }
+
+        function calcularEstadisticas() {
+            const ataques = eventsLog.filter(e => e.tipo === 'FIN_ATAQUE').length;
+            const goles = eventsLog.filter(e => e.lado === 'home' && e.tipo === 'GOL').length;
+            const asistencias = eventsLog.filter(e => e.lado === 'home' && e.tipo === 'ASISTENCIA').length;
+            const fallos = eventsLog.filter(e => e.lado === 'home' && e.tipo === 'FALLO').length;
+            const encajados = eventsLog.filter(e => e.tipo === 'GOL_ENCAJADO').length;
+            const efectividad = ataques > 0 ? Math.min(1, goles / ataques) : 0;
+            return { ataques, goles, asistencias, fallos, encajados, efectividad };
+        }
+
+        function contarZonasPorteria(tipoEvento, lado) {
+            const zonas = {};
+            eventsLog.forEach(e => {
+                if (e.lado === lado && e.tipo === tipoEvento && e.zonaPorteriaEscrita && e.zonaPorteriaEscrita !== '-') {
+                    zonas[e.zonaPorteriaEscrita] = (zonas[e.zonaPorteriaEscrita] || 0) + 1;
+                }
+            });
+            return zonas;
+        }
+
+        function pintarGraficoZonas(contenedorId, zonas, claseColor, textoVacio) {
+            const cont = document.getElementById(contenedorId);
+            cont.innerHTML = '';
+            const entradas = Object.entries(zonas);
+            if (entradas.length === 0) {
+                cont.innerHTML = `<span style="color:var(--text-muted); font-size:0.7rem;">${textoVacio}</span>`;
+                return;
+            }
+            const max = Math.max(...entradas.map(x => x[1]), 1);
+            let html = '';
+            entradas.forEach(([zona, count]) => {
+                const pct = Math.round((count / max) * 100);
+                html += `
+                    <div class="chart-bar-row">
+                        <span class="chart-bar-label">${escaparHTML(zona)}</span>
+                        <div class="chart-bar-track"><div class="chart-bar-fill ${claseColor}" style="width: ${pct}%"></div></div>
+                        <span class="chart-bar-val">${count}</span>
+                    </div>
+                `;
+            });
+            cont.innerHTML = html;
+        }
+
+        function calcularEstadisticasGlobales() {
+            const st = calcularEstadisticas();
+            document.getElementById('stat-total-ataques').innerText = st.ataques;
+            document.getElementById('stat-total-goles').innerText = st.goles;
+            document.getElementById('stat-total-asistencias').innerText = st.asistencias;
+            document.getElementById('stat-total-tiros-fuera').innerText = st.fallos;
+            document.getElementById('stat-goles-encajados').innerText = st.encajados;
+            document.getElementById('stat-efectividad').innerText = Math.round(st.efectividad * 100) + '%';
+
+            pintarGraficoZonas('chart-goles-favor-container', contarZonasPorteria('GOL', 'home'), 'green', 'Sin goles a favor con ubicación todavía.');
+            pintarGraficoZonas('chart-goles-contra-container', contarZonasPorteria('GOL_ENCAJADO', 'away'), 'red', 'Sin goles en contra con ubicación todavía.');
+        }
+
+        function poblarSelectorJugadoresAnalisis() {
+            const select = document.getElementById('select-filter-player');
+            const previo = select.value;
+            select.innerHTML = '';
+            players.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = String(p.id);          // se identifica por ID, no por nombre (los nombres pueden repetirse o editarse)
+                opt.innerText = `#${p.number} - ${p.name}`;
+                select.appendChild(opt);
+            });
+            if (previo && players.some(p => String(p.id) === previo)) select.value = previo;
+            renderPlayerShotAnalysis();
+        }
+
+        /* Eventos de un jugador (por ID; los eventos antiguos sin ID se asocian por nombre) */
+        function eventosDeJugador(p) {
+            const ignorar = ['CAMBIO', 'FIN_ATAQUE', 'TIEMPO_MUERTO', 'TIRO_MAPA', 'GOL_ENCAJADO'];
+            return eventsLog.filter(e => e.lado === 'home' && !ignorar.includes(e.tipo) &&
+                ((e.jugadorId != null && e.jugadorId === p.id) || (e.jugadorId == null && e.jugador === p.name)));
+        }
+
+        function renderPlayerShotAnalysis() {
+            const pid = document.getElementById('select-filter-player').value;
+            const resDiv = document.getElementById('player-shot-results');
+            const pObj = players.find(x => String(x.id) === pid);
+            if (!pObj) { resDiv.innerHTML = ''; return; }
+            const eventosJugador = eventosDeJugador(pObj);
+
+            let html = `<div style="margin-bottom: 4px; color: var(--accent-gold); font-weight: bold;">⏱ Tiempo en Pista: ${formatearSegundos(pObj.totalSeconds)} | ⚔ Ataques: ${pObj.attacksCount || 0}</div>`;
+
+            if (eventosJugador.length === 0) {
+                html += `<span style="color:var(--text-muted); font-size:0.7rem;">${escaparHTML(pObj.name)} no tiene acciones registradas.</span>`;
+                resDiv.innerHTML = html;
+                return;
+            }
+
+            const conteo = {};
+            eventosJugador.forEach(t => { conteo[t.accion] = (conteo[t.accion] || 0) + 1; });
+
+            const maxC = Math.max(...Object.values(conteo), 1);
+            html += `<div class="chart-container" style="margin-top:3px;">`;
+            for (const [acc, count] of Object.entries(conteo)) {
+                const pct = Math.round((count / maxC) * 100);
+                html += `
+                    <div class="chart-bar-row">
+                        <span class="chart-bar-label">${escaparHTML(acc)}</span>
+                        <div class="chart-bar-track"><div class="chart-bar-fill gold" style="width: ${pct}%"></div></div>
+                        <span class="chart-bar-val">${count}</span>
+                    </div>
+                `;
+            }
+            html += `</div>`;
+            resDiv.innerHTML = html;
+        }
+
+        /* =====================================================================
+           EXPORTACIÓN A EXCEL (.xlsx real, varias hojas, generado sin librerías)
+           ===================================================================== */
+        const MIME_XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        const CRC_TABLE = (function () {
+            const t = new Uint32Array(256);
+            for (let n = 0; n < 256; n++) {
+                let c = n;
+                for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+                t[n] = c >>> 0;
+            }
+            return t;
+        })();
+
+        function crc32(bytes) {
+            let c = 0xFFFFFFFF;
+            for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+            return (c ^ 0xFFFFFFFF) >>> 0;
+        }
+
+        function crearZip(archivos) {          // archivos: [{ nombre, datos:Uint8Array }]  (sin compresión)
+            const enc = new TextEncoder();
+            const partes = [], central = [];
+            let offset = 0;
+            archivos.forEach(a => {
+                const nombre = enc.encode(a.nombre);
+                const crc = crc32(a.datos), size = a.datos.length;
+
+                const lh = new Uint8Array(30 + nombre.length), dv = new DataView(lh.buffer);
+                dv.setUint32(0, 0x04034b50, true); dv.setUint16(4, 20, true); dv.setUint16(6, 0x0800, true);
+                dv.setUint16(8, 0, true); dv.setUint16(10, 0, true); dv.setUint16(12, 0x21, true);
+                dv.setUint32(14, crc, true); dv.setUint32(18, size, true); dv.setUint32(22, size, true);
+                dv.setUint16(26, nombre.length, true); dv.setUint16(28, 0, true);
+                lh.set(nombre, 30);
+                partes.push(lh, a.datos);
+
+                const ch = new Uint8Array(46 + nombre.length), cv = new DataView(ch.buffer);
+                cv.setUint32(0, 0x02014b50, true); cv.setUint16(4, 20, true); cv.setUint16(6, 20, true);
+                cv.setUint16(8, 0x0800, true); cv.setUint16(10, 0, true); cv.setUint16(12, 0, true); cv.setUint16(14, 0x21, true);
+                cv.setUint32(16, crc, true); cv.setUint32(20, size, true); cv.setUint32(24, size, true);
+                cv.setUint16(28, nombre.length, true); cv.setUint32(42, offset, true);
+                ch.set(nombre, 46);
+                central.push(ch);
+
+                offset += lh.length + size;
+            });
+            let cdSize = 0;
+            central.forEach(c => { cdSize += c.length; });
+            const eocd = new Uint8Array(22), ev = new DataView(eocd.buffer);
+            ev.setUint32(0, 0x06054b50, true);
+            ev.setUint16(8, archivos.length, true); ev.setUint16(10, archivos.length, true);
+            ev.setUint32(12, cdSize, true); ev.setUint32(16, offset, true);
+            return new Blob(partes.concat(central, [eocd]), { type: MIME_XLSX });
+        }
+
+        function letraColumna(i) {
+            let s = '';
+            i++;
+            while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); }
+            return s;
+        }
+
+        function xmlEsc(s) {
+            return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+                .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g, '');
+        }
+
+        /* Estilos de celda: 0 normal · 1 cabecera · 2 porcentaje · 3 negrita */
+        const ESTILO = { NORMAL: 0, CABECERA: 1, PORCENTAJE: 2, NEGRITA: 3 };
+
+        function xmlHoja(hoja) {
+            const filas = hoja.filas;
+            const anchos = [];
+            let maxCol = 0;
+            let sheetData = '';
+            filas.forEach((fila, i) => {
+                let celdas = '';
+                fila.forEach((c, j) => {
+                    let v = c, s = 0;
+                    if (c !== null && typeof c === 'object') { v = c.v; s = c.s || 0; }
+                    if (hoja.cabecera && i === 0 && s === 0) s = ESTILO.CABECERA;
+                    const len = (v === null || v === undefined) ? 0 : String(typeof v === 'number' && s === ESTILO.PORCENTAJE ? '100%' : v).length;
+                    anchos[j] = Math.max(anchos[j] || 8, Math.min(len + 2, 48));
+                    maxCol = Math.max(maxCol, j + 1);
+                    if (v === null || v === undefined || v === '') {
+                        if (s) celdas += `<c r="${letraColumna(j)}${i + 1}" s="${s}"/>`;
+                        return;
+                    }
+                    const ref = `${letraColumna(j)}${i + 1}`;
+                    const atr = s ? ` s="${s}"` : '';
+                    if (typeof v === 'number' && isFinite(v)) celdas += `<c r="${ref}"${atr}><v>${v}</v></c>`;
+                    else celdas += `<c r="${ref}"${atr} t="inlineStr"><is><t xml:space="preserve">${xmlEsc(v)}</t></is></c>`;
+                });
+                sheetData += `<row r="${i + 1}">${celdas}</row>`;
+            });
+            let xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+                '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">';
+            if (hoja.cabecera && filas.length > 1) {
+                xml += '<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>' +
+                    '<selection pane="bottomLeft"/></sheetView></sheetViews>';
+            }
+            if (maxCol > 0) {
+                xml += '<cols>';
+                for (let j = 0; j < maxCol; j++) xml += `<col min="${j + 1}" max="${j + 1}" width="${anchos[j] || 8}" customWidth="1"/>`;
+                xml += '</cols>';
+            }
+            xml += `<sheetData>${sheetData}</sheetData>`;
+            if (hoja.cabecera && filas.length > 1 && maxCol > 0) xml += `<autoFilter ref="A1:${letraColumna(maxCol - 1)}${filas.length}"/>`;
+            xml += '</worksheet>';
+            return xml;
+        }
+
+        function crearXlsx(hojas) {
+            const enc = new TextEncoder();
+            const archivos = [];
+            const add = (nombre, texto) => archivos.push({ nombre, datos: enc.encode(texto) });
+            const cab = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+
+            let tipos = cab + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+                '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+                '<Default Extension="xml" ContentType="application/xml"/>' +
+                '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+                '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>';
+            hojas.forEach((h, i) => {
+                tipos += `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`;
+            });
+            tipos += '</Types>';
+            add('[Content_Types].xml', tipos);
+
+            add('_rels/.rels', cab + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+                '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>');
+
+            let libro = cab + '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ' +
+                'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>';
+            let rels = cab + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';
+            hojas.forEach((h, i) => {
+                libro += `<sheet name="${xmlEsc(h.nombre.replace(/[\[\]:*?\/\\]/g, '_').slice(0, 31))}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`;
+                rels += `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`;
+            });
+            libro += '</sheets></workbook>';
+            rels += `<Relationship Id="rId${hojas.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
+            add('xl/workbook.xml', libro);
+            add('xl/_rels/workbook.xml.rels', rels);
+
+            add('xl/styles.xml', cab + '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+                '<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>' +
+                '<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>' +
+                '<fill><patternFill patternType="solid"><fgColor rgb="FFFACC15"/><bgColor indexed="64"/></patternFill></fill></fills>' +
+                '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
+                '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+                '<cellXfs count="4">' +
+                '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+                '<xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/>' +
+                '<xf numFmtId="9" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>' +
+                '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>' +
+                '</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>');
+
+            hojas.forEach((h, i) => add(`xl/worksheets/sheet${i + 1}.xml`, xmlHoja(h)));
+            return crearZip(archivos);
+        }
+
+        function construirHojasExcel() {
+            const st = calcularEstadisticas();
+            const nombreLado = l => l === 'away' ? 'Rival' : 'Local';
+            const num = v => (v === undefined || v === null || v === '' || v === '-') ? '' : (isFinite(Number(v)) ? Number(v) : v);
+            const txt = v => (v === undefined || v === null || v === '-') ? '' : v;
+            const N = t => ({ v: t, s: ESTILO.NEGRITA });
+            const H = t => ({ v: t, s: ESTILO.CABECERA });
+            const P = v => ({ v: v, s: ESTILO.PORCENTAJE });
+            const siNo = b => b ? 'Sí' : 'No';
+            const etq = id => { const el = document.getElementById(id); return el ? String(el.innerText) : id; };
+            const cron = eventsLog.slice().reverse();                      // orden cronológico
+            const hojas = [];
+
+            // Nombres de todas las acciones (configuradas + registradas), para las columnas de acciones
+            const nombresAccion = [];
+            actions.forEach(a => { if (!nombresAccion.includes(a.name)) nombresAccion.push(a.name); });
+            players.forEach(p => eventosDeJugador(p).forEach(e => { if (!nombresAccion.includes(e.accion)) nombresAccion.push(e.accion); }));
+
+            const zonasLado = { home: calcularZonasLado('home'), away: calcularZonasLado('away') };
+            const golesFavor = contarZonasPorteria('GOL', 'home');
+            const golesContra = contarZonasPorteria('GOL_ENCAJADO', 'away');
+            const fallosPorteria = contarZonasPorteria('FALLO', 'home');
+            const tirosMapaEquipo = lado => tirosEx.filter(t => (t.equipo === 'RIVAL' ? 'away' : 'home') === lado);
+
+            /* ---------------------------------------------------------------
+               1. RESUMEN (marcador, tiempo, estado de la pantalla principal)
+               --------------------------------------------------------------- */
+            const sel = players.find(p => p.id === selectedPlayerId);
+            const selPlantilla = document.getElementById('select-equipo-plantilla');
+            hojas.push({
+                nombre: 'Resumen', cabecera: false, filas: [
+                    [H('Concepto'), H('Valor')],
+                    [N('MARCADOR Y TIEMPO'), ''],
+                    ['Equipo local', homeName],
+                    ['Equipo rival', awayName],
+                    ['Goles local (marcador)', homeGoals],
+                    ['Goles rival (marcador)', awayGoals],
+                    ['Diferencia (local - rival)', homeGoals - awayGoals],
+                    ['Tiempo transcurrido (segundos)', seconds],
+                    ['Tiempo transcurrido (mm:ss)', formatearSegundos(seconds)],
+                    ['Cronómetro en marcha', siNo(timerInterval !== null)],
+                    [N('TIEMPOS MUERTOS'), ''],
+                    ['Tiempos muertos restantes (local)', timeoutsHome],
+                    ['Tiempos muertos usados (local)', MAX_TIEMPOS_MUERTOS - timeoutsHome],
+                    ['Tiempos muertos restantes (rival)', timeoutsAway],
+                    ['Tiempos muertos usados (rival)', MAX_TIEMPOS_MUERTOS - timeoutsAway],
+                    [N('PLANTILLA Y ESTADO DE LA PANTALLA'), ''],
+                    ['Plantilla seleccionada', selPlantilla && selPlantilla.value ? selPlantilla.value : '(sin guardar)'],
+                    ['Jugadores en plantilla', players.length],
+                    ['Jugadores en pista', players.filter(p => p.onField).length],
+                    ['Jugadores en banquillo', players.filter(p => !p.onField).length],
+                    ['Jugadores excluidos ahora', players.filter(p => (p.exclusionSeconds || 0) > 0).length],
+                    ['Jugador seleccionado', sel ? `#${sel.number} ${sel.name}` : ''],
+                    ['Acción seleccionada', selectedAction],
+                    ['Ataque en curso', siNo(ataqueEnCurso)],
+                    ['Ataques iniciados', ataqueNumero],
+                    [N('ANALÍTICA'), ''],
+                    [etq('lbl-stat-ataques'), st.ataques],
+                    [etq('lbl-stat-goles'), st.goles],
+                    [etq('lbl-stat-asist'), st.asistencias],
+                    [etq('lbl-stat-fallos'), st.fallos],
+                    [etq('lbl-stat-contra'), st.encajados],
+                    [etq('lbl-stat-efec'), P(st.efectividad)],
+                    [N('MAPA DE TIROS'), ''],
+                    ['Tiros en el mapa (local)', tirosMapaEquipo('home').length],
+                    ['Tiros en el mapa (rival)', tirosMapaEquipo('away').length],
+                    ['Lanzamientos totales para zonas (local)', zonasLado.home.total],
+                    ['Lanzamientos totales para zonas (rival)', zonasLado.away.total],
+                    [N('REGISTRO'), ''],
+                    ['Total de eventos registrados', eventsLog.length],
+                    ['Fecha de exportación', new Date().toLocaleString()],
+                    ['Nota', 'Los tramos de 5 minutos usan el cronómetro: si se reinicia el reloj en el descanso, los tramos se solapan.']
+                ]
+            });
+
+            /* ---------------------------------------------------------------
+               2. ANALITICA (réplica del modal Analítica)
+               --------------------------------------------------------------- */
+            const filasAn = [
+                [N(etq('txt-modal-analitica-title'))],
+                [],
+                [H('Indicador'), H('Valor')],
+                [etq('lbl-stat-ataques'), st.ataques],
+                [etq('lbl-stat-goles'), st.goles],
+                [etq('lbl-stat-asist'), st.asistencias],
+                [etq('lbl-stat-fallos'), st.fallos],
+                [etq('lbl-stat-contra'), st.encajados],
+                [etq('lbl-stat-efec'), P(st.efectividad)],
+                []
+            ];
+            const bloqueZonas = (titulo, zonas) => {
+                const total = Object.values(zonas).reduce((a, b) => a + b, 0);
+                const max = Math.max(...Object.values(zonas), 1);
+                filasAn.push([N(titulo)], [H('Zona_Porteria'), H('Goles'), H('Porcentaje_Del_Total'), H('Barra_Grafico_vs_Maximo')]);
+                ZONAS_PORTERIA.forEach(z => {
+                    const c = zonas[z] || 0;
+                    filasAn.push([z, c, P(total > 0 ? c / total : 0), P(c / max)]);
+                });
+                filasAn.push([N('TOTAL'), total, P(total > 0 ? 1 : 0), ''], []);
+            };
+            bloqueZonas(etq('txt-sec-goles-favor'), golesFavor);
+            bloqueZonas(etq('txt-sec-goles-contra'), golesContra);
+
+            filasAn.push([N(etq('txt-sec-desglose-jugador'))]);
+            filasAn.push([H('Dorsal'), H('Jugador'), H('Tiempo_En_Pista'), H('Ataques')].concat(nombresAccion.map(H), [H('Total_Acciones')]));
+            players.forEach(p => {
+                const ev = eventosDeJugador(p);
+                filasAn.push([num(p.number), p.name, formatearSegundos(p.totalSeconds), p.attacksCount || 0]
+                    .concat(nombresAccion.map(n => ev.filter(e => e.accion === n).length), [ev.length]));
+            });
+            hojas.push({ nombre: 'Analitica', cabecera: false, filas: filasAn });
+
+            /* ---------------------------------------------------------------
+               3. MAPA_ANALISIS (réplica del modal Mapa de tiros, ambos equipos)
+               --------------------------------------------------------------- */
+            const filasMa = [[N(etq('txt-mapa-ex-title'))], []];
+            ['home', 'away'].forEach(lado => {
+                const { mapa, total } = zonasLado[lado];
+                const tiros = obtenerTirosParaZonas(lado);
+                filasMa.push([N(`${nombreEquipoPorLado(lado)} (${nombreLado(lado)}) - Concentración y densidad de tiros`)]);
+                filasMa.push([H('Zona_Tactica'), H('Total_Tiros'), H('Goles'), H('Paradas'), H('Fuera_o_Fallo'), H('Densidad_Equipo'), H('Eficacia_Zona')]);
+                let tg = 0, tp = 0, tf = 0;
+                ZONAS_TACTICAS.forEach(z => {
+                    const s = mapa[z];
+                    tg += s.goles; tp += s.paradas; tf += s.fuera;
+                    filasMa.push([z, s.total, s.goles, s.paradas, s.fuera, P(total > 0 ? s.total / total : 0), P(s.total > 0 ? s.goles / s.total : 0)]);
+                });
+                filasMa.push([N('TOTAL'), total, tg, tp, tf, P(total > 0 ? 1 : 0), P(total > 0 ? tg / total : 0)], []);
+
+                filasMa.push([H('Sector_Del_Campo'), H('Zonas_Incluidas'), H('Total_Tiros'), H('Densidad_Sector')]);
+                calcularSectores(mapa, total).forEach(sec => filasMa.push([sec.titulo, sec.claves.join(' | '), sec.total, P(sec.densidad)]));
+                filasMa.push([]);
+
+                filasMa.push([H('Origen_Del_Dato'), H('Lanzamientos')]);
+                filasMa.push(['Mapa flotante', tiros.filter(t => t.origen === 'Mapa flotante').length]);
+                filasMa.push(['Panel principal (goles, fallos y goles encajados con ubicación)', tiros.filter(t => t.origen === 'Panel principal').length]);
+                filasMa.push([]);
+                filasMa.push([H('Resultado_Del_Tiro'), H('Lanzamientos')]);
+                ['gol', 'paradon', 'fuera', 'fallo'].forEach(r => filasMa.push([r, tiros.filter(t => t.resultado === r).length]));
+                filasMa.push([], []);
+            });
+            hojas.push({ nombre: 'Mapa_Analisis', cabecera: false, filas: filasMa });
+
+            /* ---------------------------------------------------------------
+               4. CRONOLOGÍA (todos los campos de cada evento)
+               --------------------------------------------------------------- */
+            const filasCrono = [[
+                'Orden', 'ID_Evento', 'Segundo', 'Tiempo_mmss', 'Goles_Local', 'Goles_Rival', 'Dif_Local_menos_Rival', 'Lado', 'Equipo',
+                'Categoria', 'Tipo', 'Accion', 'Dorsal', 'ID_Jugador', 'Jugador', 'Zona_Porteria', 'Porteria_X', 'Porteria_Y',
+                'Zona_Campo', 'Campo_X', 'Campo_Y', 'Resultado_Tiro_Mapa', 'Ataque_N', 'Inicio_Ataque_Seg', 'Duracion_Ataque_Seg',
+                'Jugadores_En_Pista_Dorsales', 'N_En_Pista', 'Excluidos_Activos_Dorsales'
+            ]];
+            cron.forEach((e, i) => {
+                const gl = num(e.golesLocal), gr = num(e.golesRival);
+                filasCrono.push([
+                    i + 1, String(e.id), num(e.segundos), e.tiempo, gl, gr, (gl === '' || gr === '') ? '' : gl - gr,
+                    nombreLado(e.lado), nombreEquipoPorLado(e.lado), e.categoria, e.tipo, e.accion,
+                    num(e.dorsal), e.jugadorId != null ? String(e.jugadorId) : '', txt(e.jugador),
+                    txt(e.zonaPorteriaEscrita), num(e.golX), num(e.golY),
+                    txt(e.zonaCampo), num(e.campoX), num(e.campoY), txt(e.resultado),
+                    num(e.ataqueNum), num(e.inicioAtaque), num(e.duracionAtaque),
+                    txt(e.enPista), num(e.numEnPista), txt(e.excluidos)
+                ]);
+            });
+            hojas.push({ nombre: 'Cronologia', cabecera: true, filas: filasCrono });
+
+            /* ---------------------------------------------------------------
+               5. ATAQUES (uno por ataque: duración, resultado, jugadores)
+               --------------------------------------------------------------- */
+            const filasAt = [[
+                'Ataque_N', 'Estado', 'Inicio_Seg', 'Inicio_mmss', 'Fin_Seg', 'Fin_mmss', 'Duracion_Seg', 'Marcador_Al_Fin',
+                'Jugadores_En_Pista_Al_Fin', 'Goles', 'Fallos', 'Asistencias', 'Otras_Acciones', 'Resultado'
+            ]];
+            const grupos = {};
+            cron.forEach(e => { if (e.ataqueNum !== '' && e.ataqueNum != null) (grupos[e.ataqueNum] = grupos[e.ataqueNum] || []).push(e); });
+            const filaAtaque = (n, grupo, fin) => {
+                const otros = grupo.filter(e => e.tipo !== 'FIN_ATAQUE');
+                const goles = otros.filter(e => e.lado === 'home' && e.tipo === 'GOL').length;
+                const fallos = otros.filter(e => e.lado === 'home' && e.tipo === 'FALLO').length;
+                const asist = otros.filter(e => e.lado === 'home' && e.tipo === 'ASISTENCIA').length;
+                const ini = fin ? fin.inicioAtaque : (n === ataqueNumero && ataqueEnCurso ? ataqueInicioSeg : '');
+                return [
+                    n === '' ? '' : n, fin ? 'Finalizado' : 'En curso',
+                    num(ini), ini === '' ? '' : formatearSegundos(ini),
+                    fin ? num(fin.segundos) : '', fin ? fin.tiempo : '', fin ? num(fin.duracionAtaque) : '',
+                    fin ? fin.marcador : '', fin ? txt(fin.enPista) : '',
+                    goles, fallos, asist, otros.length - goles - fallos - asist,
+                    goles > 0 ? 'Gol' : fallos > 0 ? 'Fallo / Parada' : 'Sin lanzamiento registrado'
+                ];
+            };
+            for (let n = 1; n <= ataqueNumero; n++) {
+                const g = grupos[n] || [];
+                filasAt.push(filaAtaque(n, g, g.find(e => e.tipo === 'FIN_ATAQUE')));
+            }
+            cron.filter(e => e.tipo === 'FIN_ATAQUE' && (e.ataqueNum === '' || e.ataqueNum == null)).forEach(e => filasAt.push(filaAtaque('', [e], e)));
+            hojas.push({ nombre: 'Ataques', cabecera: true, filas: filasAt });
+
+            /* ---------------------------------------------------------------
+               6. TRAMOS DE 5 MINUTOS
+               --------------------------------------------------------------- */
+            const filasTr = [['Tramo', 'Desde_mmss', 'Hasta_mmss', 'Goles_Local', 'Goles_Rival', 'Dif_Tramo', 'Fallos_Local', 'Asistencias', 'Exclusiones', 'Tiempos_Muertos', 'Ataques_Finalizados', 'Tiros_Mapa', 'Total_Eventos']];
+            const maxSeg = Math.max(seconds, ...eventsLog.map(e => Number(e.segundos) || 0), 0);
+            const nTramos = (eventsLog.length > 0 || seconds > 0) ? Math.floor(maxSeg / 300) + 1 : 0;
+            for (let t = 0; t < nTramos; t++) {
+                const ev = eventsLog.filter(e => Math.floor((Number(e.segundos) || 0) / 300) === t);
+                const c = (tipo, lado) => ev.filter(e => e.tipo === tipo && (!lado || e.lado === lado)).length;
+                const gl = c('GOL', 'home'), gr = c('GOL_ENCAJADO');
+                filasTr.push([t + 1, formatearSegundos(t * 300), formatearSegundos(t * 300 + 299), gl, gr, gl - gr,
+                    c('FALLO', 'home'), c('ASISTENCIA', 'home'), c('EXCLUSION', 'home'), c('TIEMPO_MUERTO'), c('FIN_ATAQUE'), c('TIRO_MAPA'), ev.length]);
+            }
+            hojas.push({ nombre: 'Tramos_5min', cabecera: true, filas: filasTr });
+
+            /* ---------------------------------------------------------------
+               7. JUGADORES
+               --------------------------------------------------------------- */
+            const filasJug = [[
+                'Dorsal', 'Jugador', 'ID_Jugador', 'Estado_Actual', 'Excluido_Ahora', 'Segundos_En_Pista', 'Minutos_En_Pista', 'Tiempo_En_Pista_mmss',
+                'Ataques_Participados', 'Segundos_Exclusion_Restantes', 'Goles', 'Asistencias', 'Fallos', 'Lanzamientos',
+                'Acierto_Lanzamiento', 'Exclusiones', 'Total_Acciones', 'Cambios_Entradas', 'Cambios_Salidas'
+            ]];
+            players.forEach(p => {
+                const ev = eventosDeJugador(p);
+                const c = t => ev.filter(e => e.tipo === t).length;
+                const goles = c('GOL'), fallos = c('FALLO');
+                const camb = cron.filter(e => e.tipo === 'CAMBIO' && e.jugadorId === p.id);
+                filasJug.push([
+                    num(p.number), p.name, String(p.id), p.onField ? 'En Pista' : 'Banquillo', siNo((p.exclusionSeconds || 0) > 0),
+                    p.totalSeconds || 0, Math.round(((p.totalSeconds || 0) / 60) * 100) / 100, formatearSegundos(p.totalSeconds || 0),
+                    p.attacksCount || 0, p.exclusionSeconds || 0, goles, c('ASISTENCIA'), fallos, goles + fallos,
+                    (goles + fallos) > 0 ? P(goles / (goles + fallos)) : '', c('EXCLUSION'), ev.length,
+                    camb.filter(e => e.accion === 'Entra a pista').length, camb.filter(e => e.accion === 'Sale a banquillo').length
+                ]);
+            });
+            hojas.push({ nombre: 'Jugadores', cabecera: true, filas: filasJug });
+
+            /* 8. JUGADOR x ACCIÓN */
+            const filasJA = [['Dorsal', 'Jugador'].concat(nombresAccion, ['Total'])];
+            const totales = nombresAccion.map(() => 0);
+            players.forEach(p => {
+                const ev = eventosDeJugador(p);
+                const fila = [num(p.number), p.name];
+                nombresAccion.forEach((n, k) => { const cnt = ev.filter(e => e.accion === n).length; totales[k] += cnt; fila.push(cnt); });
+                fila.push(ev.length);
+                filasJA.push(fila);
+            });
+            filasJA.push([N('TOTAL'), ''].concat(totales, [totales.reduce((a, b) => a + b, 0)]));
+            hojas.push({ nombre: 'Jugador_Accion', cabecera: true, filas: filasJA });
+
+            /* 9. JUGADOR x ZONA (campo y portería) */
+            const filasJZ = [['Dorsal', 'Jugador', 'Tipo_Zona', 'Zona', 'Lanzamientos', 'Goles', 'Fallos', 'Eficacia']];
+            players.forEach(p => {
+                const lanz = eventosDeJugador(p).filter(e => e.tipo === 'GOL' || e.tipo === 'FALLO');
+                const fila = (tipoZona, zona, lista) => {
+                    const g = lista.filter(e => e.tipo === 'GOL').length, f = lista.length - g;
+                    filasJZ.push([num(p.number), p.name, tipoZona, zona, lista.length, g, f, P(lista.length > 0 ? g / lista.length : 0)]);
+                };
+                ZONAS_TACTICAS.forEach(z => {
+                    const l = lanz.filter(e => e.campoX !== '-' && e.campoX !== undefined && obtenerZonaTacticaCampo(Number(e.campoX), Number(e.campoY)) === z);
+                    if (l.length) fila('Campo', z, l);
+                });
+                ZONAS_PORTERIA.forEach(z => {
+                    const l = lanz.filter(e => e.zonaPorteriaEscrita === z);
+                    if (l.length) fila('Porteria', z, l);
+                });
+            });
+            if (filasJZ.length === 1) filasJZ.push(['', 'Sin lanzamientos con ubicación todavía', '', '', '', '', '', '']);
+            hojas.push({ nombre: 'Jugador_Zonas', cabecera: true, filas: filasJZ });
+
+            /* ---------------------------------------------------------------
+               10. TIROS DEL MAPA (cada punto del mapa con su evento)
+               --------------------------------------------------------------- */
+            const filasMapa = [['Orden', 'ID_Evento', 'Equipo', 'Lado', 'Segundo', 'Tiempo_mmss', 'Goles_Local', 'Goles_Rival', 'Resultado', 'X_0_300', 'Y_0_200', 'Zona_Tactica']];
+            if (tirosEx.length === 0) filasMapa.push(['', '', 'Sin tiros registrados en el mapa', '', '', '', '', '', '', '', '', '']);
+            tirosEx.forEach((t, i) => {
+                const lado = t.equipo === 'RIVAL' ? 'away' : 'home';
+                const ev = t.eventId ? eventsLog.find(e => e.id === t.eventId) : null;
+                filasMapa.push([
+                    i + 1, t.eventId ? String(t.eventId) : '', nombreEquipoPorLado(lado), nombreLado(lado),
+                    ev ? num(ev.segundos) : '', ev ? ev.tiempo : '', ev ? num(ev.golesLocal) : '', ev ? num(ev.golesRival) : '',
+                    t.resultado, t.x, t.y, obtenerZonaTacticaCampo(t.x, t.y)
+                ]);
+            });
+            hojas.push({ nombre: 'Tiros_Mapa', cabecera: true, filas: filasMapa });
+
+            /* 11. LANZAMIENTOS_ZONAS: todos los lanzamientos usados en la densidad (mapa + panel) */
+            const filasLz = [['Orden', 'Origen', 'Equipo', 'Lado', 'Segundo', 'Tiempo_mmss', 'Goles_Local', 'Goles_Rival', 'Resultado', 'Jugador', 'Dorsal', 'Accion', 'X_0_300', 'Y_0_200', 'Zona_Tactica', 'ID_Evento']];
+            const todos = [];
+            ['home', 'away'].forEach(lado => obtenerTirosParaZonas(lado).forEach(t => todos.push({ lado, ...t })));
+            todos.sort((a, b) => (Number(a.segundos) || 0) - (Number(b.segundos) || 0));
+            if (todos.length === 0) filasLz.push(['', 'Sin lanzamientos con coordenadas', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
+            todos.forEach((t, i) => filasLz.push([
+                i + 1, t.origen, nombreEquipoPorLado(t.lado), nombreLado(t.lado), num(t.segundos), t.tiempo, num(t.golesLocal), num(t.golesRival),
+                t.resultado, txt(t.jugador), num(t.dorsal), t.accion, t.x, t.y, obtenerZonaTacticaCampo(t.x, t.y), t.eventId ? String(t.eventId) : ''
+            ]));
+            hojas.push({ nombre: 'Lanzamientos_Zonas', cabecera: true, filas: filasLz });
+
+            /* 12. ZONAS DE CAMPO (plano, ambos equipos) */
+            const filasZonas = [['Equipo', 'Lado', 'Zona_Tactica', 'Total_Tiros', 'Goles', 'Paradas', 'Fuera_o_Fallo', 'Densidad_Equipo', 'Eficacia_Zona']];
+            ['home', 'away'].forEach(lado => {
+                const { mapa, total } = zonasLado[lado];
+                ZONAS_TACTICAS.forEach(z => {
+                    const s = mapa[z];
+                    filasZonas.push([nombreEquipoPorLado(lado), nombreLado(lado), z, s.total, s.goles, s.paradas, s.fuera,
+                        P(total > 0 ? s.total / total : 0), P(s.total > 0 ? s.goles / s.total : 0)]);
+                });
+            });
+            hojas.push({ nombre: 'Zonas_Campo', cabecera: true, filas: filasZonas });
+
+            /* 13. ZONAS DE PORTERÍA (plano) */
+            const filasPort = [['Equipo', 'Lado', 'Zona_Porteria', 'Goles', 'Fallos_Con_Ubicacion']];
+            [['home', golesFavor, fallosPorteria], ['away', golesContra, {}]].forEach(([lado, goles, fallos]) => {
+                ZONAS_PORTERIA.forEach(z => filasPort.push([nombreEquipoPorLado(lado), nombreLado(lado), z, goles[z] || 0, fallos[z] || 0]));
+            });
+            hojas.push({ nombre: 'Zonas_Porteria', cabecera: true, filas: filasPort });
+
+            /* ---------------------------------------------------------------
+               14. ACCIONES CONFIGURADAS
+               --------------------------------------------------------------- */
+            const filasAc = [['ID_Accion', 'Categoria', 'Nombre', 'Clasificacion', 'Veces_Registrada', 'Seleccionada_Ahora', 'Estado']];
+            actions.forEach(a => filasAc.push([
+                a.id, a.category === 'defense' ? 'Defensa / Otros' : 'Ataque', a.name, clasificarAccion(a.name),
+                eventsLog.filter(e => e.lado === 'home' && e.accion === a.name).length, siNo(selectedAction === a.name), 'Configurada'
+            ]));
+            const configuradas = actions.map(a => a.name);
+            const extras = [];
+            eventsLog.forEach(e => {
+                if (e.lado === 'home' && !['CAMBIO', 'FIN_ATAQUE', 'TIEMPO_MUERTO', 'TIRO_MAPA'].includes(e.tipo) && !configuradas.includes(e.accion) && !extras.includes(e.accion)) extras.push(e.accion);
+            });
+            extras.forEach(n => filasAc.push(['', '', n, clasificarAccion(n), eventsLog.filter(e => e.lado === 'home' && e.accion === n).length, 'No', 'Registrada pero ya no está en la configuración']));
+            hojas.push({ nombre: 'Acciones_Config', cabecera: true, filas: filasAc });
+
+            /* ---------------------------------------------------------------
+               15. CONFIGURACIÓN (etiquetas, tamaños, colores, plantillas, carpeta)
+               --------------------------------------------------------------- */
+            const filasCf = [[N('ETIQUETAS EDITADAS')], [H('ID_Elemento'), H('Texto_Actual')]];
+            const etiquetas = leerJSON('sar_etiquetas_textos', {});
+            Object.entries(etiquetas).forEach(([k, v]) => filasCf.push([k, v]));
+            if (Object.keys(etiquetas).length === 0) filasCf.push(['(ninguna)', '']);
+            filasCf.push([], [N('TAMAÑOS DE TEXTO PERSONALIZADOS')], [H('ID_Elemento'), H('Tamaño')]);
+            const tamanios = leerJSON('sar_tamanios_textos', {});
+            Object.entries(tamanios).forEach(([k, v]) => filasCf.push([k, v]));
+            if (Object.keys(tamanios).length === 0) filasCf.push(['(ninguno)', '']);
+            filasCf.push([], [N('PALETA DE COLORES')], [H('Variable'), H('Valor')]);
+            Object.entries(PICKERS_COLOR).forEach(([variable, pickerId]) => {
+                const el = document.getElementById(pickerId);
+                filasCf.push([variable, coloresPersonalizados[variable] || (el && el.value) || '']);
+            });
+            filasCf.push([], [N('PLANTILLAS GUARDADAS')], [H('Nombre'), H('Jugadores')]);
+            const plantillas = leerJSON('sar_equipos_guardados', {});
+            Object.entries(plantillas).forEach(([k, v]) => filasCf.push([k, Array.isArray(v) ? v.length : '']));
+            if (Object.keys(plantillas).length === 0) filasCf.push(['(ninguna)', '']);
+            filasCf.push([], [N('CARPETA DE PARTIDOS Y CONFIGURACIONES')], [H('Tipo'), H('Nombre'), H('Fecha')]);
+            const carpeta = leerJSON('sar_carpeta_guardados', []);
+            carpeta.forEach(it => filasCf.push([it.tipo, it.nombre, it.fecha]));
+            if (carpeta.length === 0) filasCf.push(['(vacía)', '', '']);
+            hojas.push({ nombre: 'Configuracion', cabecera: false, filas: filasCf });
+
+            return hojas;
+        }
+
+        function exportFullData() {
+            try {
+                const blob = crearXlsx(construirHojasExcel());
+                const limpio = s => String(s).replace(/[^\wÀ-ÿ-]+/g, '_');
+                const d = new Date();
+                const pad = n => String(n).padStart(2, '0');
+                const fecha = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
+                descargarBlob(blob, `Partido_${limpio(homeName)}_vs_${limpio(awayName)}_${fecha}.xlsx`);
+            } catch (err) {
+                console.error(err);
+                alert('No se pudo generar el Excel: ' + err.message);
+            }
+        }
+
+        /* =====================================================================
+           REINICIO
+           ===================================================================== */
+        function resetMatch() {
+            if (confirm('¿Reiniciar marcador, temporizador y lista de eventos?')) {
+                eventsLog = []; homeGoals = 0; awayGoals = 0; seconds = 0;
+                timeoutsHome = MAX_TIEMPOS_MUERTOS; timeoutsAway = MAX_TIEMPOS_MUERTOS;
+                limpiarTirosMapa();
+                players.forEach(p => { p.totalSeconds = 0; p.attacksCount = 0; p.exclusionSeconds = 0; });
+                if (timerInterval) rebasarCronometro();
+                ataqueEnCurso = false;
+                ataqueNumero = 0; ataqueInicioSeg = 0;
+                pintarEstadoAtaque();
+                try { localStorage.removeItem(CLAVE_AUTOGUARDADO); } catch (e) {}
+                actualizarTimeoutsUI();
+                actualizarMarcador(); actualizarDisplayTiempo(); renderFeed(); renderRoster();
+                if (typeof actualizarVistaMapaEx === 'function') actualizarVistaMapaEx();
+            }
+        }
+    </script>
+
+    <!-- MÓDULO EXTERNO FLOTANTE: MAPA DE TIROS Y DENSIDAD DE ZONAS DE CAMPO -->
+    <script>
+        /* Zonas tácticas sobre coordenadas normalizadas (0-300 en X, 0-200 en Y), iguales para el minicampo y el mapa flotante */
+        function obtenerZonaTacticaCampo(x, y) {
+            if (y < 90) {
+                if (x < 75) return 'Extremo Izquierdo (6m)';
+                if (x < 125) return 'Lateral Izquierdo (6m)';
+                if (x < 175) return 'Central / Pivote (6m)';
+                if (x < 225) return 'Lateral Derecho (6m)';
+                return 'Extremo Derecho (6m)';
+            } else if (y < 150) {
+                if (x < 100) return '9m Izquierda';
+                if (x < 200) return '9m Central';
+                return '9m Derecha';
+            } else {
+                return 'Distancia Lejana (10m+)';
+            }
+        }
+
+        function actualizarVistaMapaEx() {
+            const radioSel = document.querySelector('input[name="equipo-ex"]:checked');
+            if (!radioSel) return;
+            const equipoSeleccionado = radioSel.value;                       // 'SAR' | 'RIVAL'
+            const lado = equipoSeleccionado === 'RIVAL' ? 'away' : 'home';
+            const tituloZonas = document.getElementById('titulo-panel-zonas-activo');
+            if (tituloZonas) {
+                tituloZonas.innerText = `📊 Densidad de Tiros por Zona (${equipoSeleccionado})`;
+            }
+
+            // Los tiros se cuentan UNA sola vez (antes el mapa se sumaba dos veces)
+            const { mapa: zonasMap, total: totalTirosEquipo } = calcularZonasLado(lado);
+
+            const contenedorStats = document.getElementById('stats-zonas-equipo-activo');
+            if (contenedorStats) {
+                let htmlStats = `<ul style="list-style:none; padding:0; margin:0;">`;
+                let hayDatos = false;
+
+                for (const [zona, stats] of Object.entries(zonasMap)) {
+                    if (stats.total > 0) {
+                        hayDatos = true;
+                        const densidadPct = totalTirosEquipo > 0 ? Math.round((stats.total / totalTirosEquipo) * 100) : 0;
+                        const eficacia = stats.total > 0 ? Math.round((stats.goles / stats.total) * 100) : 0;
+                        htmlStats += `<li style="font-size:0.68rem; margin-bottom:3px; display:flex; justify-content:space-between; border-bottom:1px dashed #1e293b; padding-bottom:2px;">
+                            <span><strong>${zona}:</strong></span>
+                            <span>${stats.total} tiros (<strong style="color:var(--accent-gold);">${densidadPct}%</strong> densidad) | ${eficacia}% ef.</span>
+                        </li>`;
+                    }
+                }
+                if (!hayDatos) {
+                    htmlStats += `<li style="color: var(--text-muted); font-size:0.7rem; text-align:center;">Sin lanzamientos con coordenadas para ${equipoSeleccionado}. Marca puntos en la cancha.</li>`;
+                }
+                htmlStats += `</ul>`;
+                contenedorStats.innerHTML = htmlStats;
+            }
+
+            const overlayZonas = document.getElementById('cancha-zonas-stats-overlay');
+            if (overlayZonas) {
+                overlayZonas.innerHTML = '';
+
+                calcularSectores(zonasMap, totalTirosEquipo).forEach(sec => {
+                    const pctDensidadSector = Math.round(sec.densidad * 100);
+                    const sectorTotal = sec.total;
+
+                    const badge = document.createElement('div');
+                    badge.style.background = 'rgba(9, 13, 22, 0.85)';
+                    badge.style.border = '1px solid var(--accent-gold)';
+                    badge.style.borderRadius = '4px';
+                    badge.style.padding = '4px';
+                    badge.style.fontSize = '0.62rem';
+                    badge.style.textAlign = 'center';
+                    badge.style.display = 'flex';
+                    badge.style.flexDirection = 'column';
+                    badge.style.justifyContent = 'center';
+                    badge.innerHTML = `<span style="color:#94a3b8; font-size:0.55rem; font-weight:bold;">${sec.titulo}</span><span style="color: var(--accent-gold); font-size:0.75rem; font-weight:900;">${pctDensidadSector}%</span><span style="color:#fff; font-size:0.55rem;">(${sectorTotal} tiros)</span>`;
+                    overlayZonas.appendChild(badge);
+                });
+            }
+
+            tirosEx.forEach(t => {
+                if (t.elemento) {
+                    t.elemento.style.display = (t.equipo === equipoSeleccionado) ? 'block' : 'none';
+                }
+            });
+        }
+
+        (function () {
+            const btnAbrir = document.getElementById('btn-abrir-mapa-ex');
+            const modal = document.getElementById('modal-mapa-ex');
+            const btnCerrar = document.getElementById('btn-cerrar-mapa-ex');
+            const cancha = document.getElementById('cancha-ex');
+            const btnBorrar = document.getElementById('btn-borrar-ultimo-ex');
+
+            if (btnAbrir && modal) {
+                btnAbrir.onclick = () => {
+                    modal.style.display = 'flex';
+                    actualizarVistaMapaEx();
+                };
+            }
+            if (btnCerrar && modal) {
+                btnCerrar.onclick = () => modal.style.display = 'none';
+            }
+            if (modal) {
+                modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+            }
+
+            if (cancha) {
+                cancha.onclick = function (e) {
+                    // Coordenadas normalizadas a 300x200: ya no dependen del tamaño de pantalla
+                    const rect = cancha.getBoundingClientRect();
+                    const w = cancha.clientWidth || rect.width;
+                    const h = cancha.clientHeight || rect.height;
+                    const x = Math.min(300, Math.max(0, Math.round(((e.clientX - rect.left - cancha.clientLeft) / w) * 300)));
+                    const y = Math.min(200, Math.max(0, Math.round(((e.clientY - rect.top - cancha.clientTop) / h) * 200)));
+
+                    const radioSel = document.querySelector('input[name="equipo-ex"]:checked');
+                    const equipo = radioSel ? radioSel.value : 'SAR';
+                    const resSel = document.getElementById('resultado-ex');
+                    const resultado = resSel ? resSel.value : 'gol';
+                    const lado = equipo === 'RIVAL' ? 'away' : 'home';
+
+                    // El evento de la cronología y el tiro del mapa quedan enlazados por eventId
+                    const ev = crearEvento({
+                        lado, categoria: 'MAPA_CAMPO', tipo: 'TIRO_MAPA',
+                        accion: `Tiro (${resultado.toUpperCase()})`, resultado,
+                        dorsal: '-', jugador: nombreEquipoPorLado(lado),
+                        zonaCampo: obtenerZonaTacticaCampo(x, y), campoX: x, campoY: y
+                    });
+                    crearMarcadorMapa({ x, y, equipo, resultado, eventId: ev.id });
+
+                    renderFeed();
+                    actualizarVistaMapaEx();
+                };
+            }
+
+            if (btnBorrar) {
+                btnBorrar.onclick = function () {
+                    const radioSel = document.querySelector('input[name="equipo-ex"]:checked');
+                    const equipoActual = radioSel ? radioSel.value : 'SAR';
+                    for (let i = tirosEx.length - 1; i >= 0; i--) {
+                        if (tirosEx[i].equipo === equipoActual) {
+                            const eliminado = tirosEx.splice(i, 1)[0];
+                            if (eliminado && eliminado.elemento) eliminado.elemento.remove();
+                            // también se elimina su evento de la cronología (antes quedaba huérfano y seguía contando)
+                            if (eliminado && eliminado.eventId) {
+                                const k = eventsLog.findIndex(ev => ev.id === eliminado.eventId);
+                                if (k > -1) eventsLog.splice(k, 1);
+                            }
+                            break;
+                        }
+                    }
+                    renderFeed();
+                    actualizarVistaMapaEx();
+                };
+            }
+        })();
+    </script>
+</body>
+</html>
