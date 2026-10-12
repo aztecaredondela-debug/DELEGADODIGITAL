@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DELEGADO DIGITAL - SAR DATA</title>
     <style>
         :root {
@@ -19,13 +19,15 @@
             --base-font-size: 14px;
             --btn-padding: 5px 8px;
             --border-radius: 6px;
+            --card-pista-bg: #101c30; --card-pista-border: #22c55e; --card-banq-bg: #0c121d; --card-banq-border: #64748b;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
-        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg-dark); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; flex-direction: column; font-size: var(--base-font-size); }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+        input, select, textarea { user-select: text; -webkit-user-select: text; }
+        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg-dark); color: var(--text-main); height: 100vh; height: 100dvh; overflow: hidden; display: flex; flex-direction: column; font-size: var(--base-font-size); }
 
         /* HEADER / MARCADOR Y SELECTOR */
-        header { background: #05080f; padding: 4px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); height: 46px; flex-shrink: 0; z-index: 10; }
+        header { background: #05080f; padding: 4px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); min-height: 46px; flex-wrap: wrap; gap: 4px; flex-shrink: 0; z-index: 10; }
         .score-container { display: flex; align-items: center; gap: 6px; }
         .team-label { font-weight: 800; font-size: 0.8rem; color: #fff; text-transform: uppercase; cursor: pointer; letter-spacing: 0.5px; }
         .score-box { background: var(--panel-bg); padding: 1px 6px; border-radius: var(--border-radius); font-weight: bold; font-size: 1.1rem; color: var(--accent-gold); border: 1.5px solid var(--border-color); font-family: monospace; cursor: pointer; }
@@ -53,22 +55,21 @@
         body.modo-ajuste-texto .btn-edit-label { display: inline-block !important; }
 
         /* CONTENEDOR PRINCIPAL */
-        .main-layout { display: grid; grid-template-columns: 1fr 360px; gap: 6px; padding: 6px; height: calc(100vh - 46px); overflow: hidden; }
+        .main-layout { display: grid; grid-template-columns: 1fr 360px; gap: 6px; padding: 6px; flex: 1 1 0; min-height: 0; overflow: hidden; }
 
         .panel { background: var(--panel-bg); border-radius: var(--border-radius); padding: 6px; display: flex; flex-direction: column; gap: 4px; border: 1px solid var(--border-color); overflow: hidden; }
         .panel-header { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); border-bottom: 1.5px solid var(--border-color); padding-bottom: 2px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
 
         /* LADO IZQUIERDO: JUGADORES Y ACCIONES */
-        .left-main-panel { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; padding-right: 3px; }
+        .left-main-panel { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; padding-right: 3px; padding-bottom: 64px; }
         
         .roster-section { background: rgba(9, 13, 22, 0.7); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 4px; display: flex; flex-direction: column; gap: 3px; }
         .sub-header { font-size: 0.65rem; font-weight: 800; color: var(--accent-gold); display: flex; justify-content: space-between; align-items: center; letter-spacing: 0.5px; }
         
         .roster-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
         
-        .player-card { background: #090d16; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 6px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; min-height: 34px; transition: 0.1s; position: relative; }
+        .player-card { padding: 4px 6px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; min-height: 34px; transition: 0.1s; position: relative; }
         .player-card.selected { border-color: var(--accent-blue); background: #1e3a8a; box-shadow: 0 0 4px rgba(59,130,246,0.5); }
-        .player-card.bench { opacity: 0.5; background: #0c121d; }
         .player-card.excluded { border-color: var(--accent-red); background: rgba(239, 68, 68, 0.2); }
         
         /* OCULTOS POR DEFECTO: Botones de editar y eliminar en tarjetas de jugador */
@@ -93,14 +94,14 @@
         
         /* MEJORA DE VISIBILIDAD DE LOS BOTONES DE ACCIÓN EN TARJETAS DE JUGADOR */
         .player-actions-group { display: flex; gap: 3px; align-items: center; }
-        .p-action-btn { padding: 2px 5px; font-size: 0.65rem; font-weight: bold; border-radius: 3px; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+        .p-action-btn { padding: 4px 8px; min-height: 24px; font-size: 0.7rem; font-weight: bold; border-radius: 3px; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.3); }
         .p-btn-exc { background: #dc2626; }
         .p-btn-edit { background: #475569; }
         .p-btn-toggle { background: #2563eb; }
         .p-btn-delete { background: #991b1b; }
 
-        .player-time-badge { font-size: 0.55rem; font-family: monospace; color: var(--accent-gold); background: rgba(0,0,0,0.5); padding: 0px 2px; border-radius: 2px; }
-        .player-exclusion-badge { font-size: 0.55rem; font-family: monospace; color: #fff; background: var(--accent-red); padding: 0px 3px; border-radius: 2px; font-weight: bold; }
+        .player-time-badge { font-size: 0.66rem; font-family: monospace; color: var(--accent-gold); background: rgba(0,0,0,0.5); padding: 0px 2px; border-radius: 2px; }
+        .player-exclusion-badge { font-size: 0.66rem; font-family: monospace; color: #fff; background: var(--accent-red); padding: 0px 3px; border-radius: 2px; font-weight: bold; }
 
         .actions-container { display: flex; flex-direction: column; gap: 4px; flex-grow: 1; }
         details.action-dropdown { background: #090d16; border: 1px solid var(--border-color); border-radius: var(--border-radius); overflow: hidden; }
@@ -113,8 +114,9 @@
         
         .action-btn { width: 100%; background: #1e293b; border: 1px solid var(--border-color); color: #fff; padding: 3px 2px; border-radius: 4px; font-size: 0.68rem; font-weight: 700; cursor: pointer; text-align: center; min-height: 24px; display: flex; align-items: center; justify-content: center; }
         .action-btn.selected { border-color: var(--accent-green); background: #14532d; box-shadow: 0 0 4px rgba(34,197,94,0.4); }
-        .action-del-btn { position: absolute; top: 1px; right: 1px; background: rgba(239, 68, 68, 0.9); color: #fff; border: none; border-radius: 2px; width: 12px; height: 12px; font-size: 8px; line-height: 10px; cursor: pointer; display: none; text-align: center; }
+        .action-del-btn { position: absolute; top: 1px; right: 1px; background: rgba(239, 68, 68, 0.9); color: #fff; border: none; border-radius: 2px; width: 18px; height: 18px; font-size: 12px; line-height: 16px; cursor: pointer; display: none; text-align: center; }
         .action-btn-wrapper:hover .action-del-btn { display: block; }
+        body.modo-ajuste-texto .action-del-btn { display: block; }
 
         @keyframes pulse-active {
             0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
@@ -138,7 +140,7 @@
         
         .graphics-box { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: rgba(9, 13, 22, 0.7); padding: 4px; border-radius: var(--border-radius); border: 1px solid var(--border-color); }
         .mini-view-container { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-        .mini-label { font-size: 0.58rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase; }
+        .mini-label { font-size: 0.66rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase; }
         
         .goal-container-sm { width: 100%; aspect-ratio: 4/2.6; background: #05080f; border-radius: var(--border-radius); position: relative; border: 1px solid var(--border-color); overflow: hidden; }
         .goal-svg { width: 100%; height: 100%; cursor: crosshair; }
@@ -149,7 +151,7 @@
         .btn-register-main { background: var(--accent-green); color: #000; font-size: 0.75rem; font-weight: 900; padding: 6px; border-radius: var(--border-radius); border: none; cursor: pointer; width: 100%; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; }
         .btn-gol-rival { background: var(--accent-red); color: #fff; font-size: 0.75rem; font-weight: 900; padding: 6px; border-radius: var(--border-radius); border: none; cursor: pointer; width: 100%; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; }
 
-        .event-feed { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; flex-grow: 1; padding-right: 2px; }
+        .event-feed { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; flex-grow: 1; padding-right: 2px; padding-bottom: 64px; }
         .event-card { background: #090d16; padding: 4px 6px; border-radius: var(--border-radius); border-left: 3px solid var(--accent-blue); font-size: 0.7rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-color); border-left-width: 3px; }
         .event-card.goal { border-left-color: var(--accent-green); }
         .event-card.rival { border-left-color: var(--accent-red); }
@@ -167,7 +169,7 @@
         .stats-grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 5px; }
         .stat-card { background: #090d16; border: 1px solid var(--border-color); padding: 6px; border-radius: var(--border-radius); text-align: center; }
         .stat-card-val { font-size: 1.05rem; font-weight: 900; color: var(--accent-gold); font-family: monospace; }
-        .stat-card-lbl { font-size: 0.55rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-top: 1px; }
+        .stat-card-lbl { font-size: 0.66rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-top: 1px; }
 
         .analysis-section { background: #090d16; border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 8px; display: flex; flex-direction: column; gap: 5px; }
         .analysis-title { font-size: 0.75rem; font-weight: 800; color: var(--accent-blue); display: flex; justify-content: space-between; align-items: center; }
@@ -183,7 +185,7 @@
         .chart-bar-val { min-width: 22px; text-align: right; font-family: monospace; font-weight: bold; color: #fff; font-size: 0.75rem; }
 
         /* EDITOR / CARPETA */
-        .editor-drawer { position: fixed; bottom: 0; left: 0; width: 100%; background: #0b1322; border-top: 2px solid var(--accent-gold); border-radius: 10px 10px 0 0; box-shadow: -6px rgba(0,0,0,0.7); z-index: 9999; transform: translateY(100%); transition: transform 0.3s ease-in-out; max-height: 85vh; display: flex; flex-direction: column; }
+        .editor-drawer { position: fixed; bottom: 0; left: 0; width: 100%; background: #0b1322; border-top: 2px solid var(--accent-gold); border-radius: 10px 10px 0 0; box-shadow: 0 -6px 14px rgba(0,0,0,0.7); z-index: 9999; transform: translateY(100%); transition: transform 0.3s ease-in-out; max-height: 85vh; display: flex; flex-direction: column; }
         .editor-drawer.open { transform: translateY(0); }
         
         .editor-drawer-header { padding: 8px 12px; background: #162032; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); }
@@ -203,7 +205,7 @@
         .folder-item { background: #131c2e; border: 1px solid var(--border-color); padding: 5px 8px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; }
         .folder-item-info { display: flex; flex-direction: column; gap: 1px; }
         .folder-item-title { font-weight: bold; color: var(--accent-gold); }
-        .folder-item-date { font-size: 0.6rem; color: var(--text-muted); }
+        .folder-item-date { font-size: 0.66rem; color: var(--text-muted); }
         .folder-actions { display: flex; gap: 4px; }
 
         .modal-overlay-small { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 10000; }
@@ -212,6 +214,47 @@
         .porteria-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: #000; padding: 5px; border: 2px solid var(--accent-red); border-radius: 6px; margin-bottom: 10px; }
         .btn-zona { background: #090d16; color: #fff; border: 1px solid var(--border-color); border-radius: 4px; padding: 10px 2px; font-size: 0.7rem; font-weight: 800; cursor: pointer; transition: 0.1s; }
         .btn-zona:active { background: var(--accent-red); }
+    
+
+        /* ===== POSICIONES Y JUGADORES EN PISTA ===== */
+        .p-pos-btn { font-size: 0.66rem; font-weight: 900; font-family: monospace; color: #000; background: var(--accent-gold); border: none; border-radius: 2px; padding: 0 3px; cursor: pointer; pointer-events: none; line-height: 1.3; }
+        .p-pos-btn.vacio { display: none; background: transparent; color: var(--text-muted); border: 1px dashed var(--text-muted); }
+        body.modo-gestion-plantilla .p-pos-btn { pointer-events: auto; }
+        body.modo-gestion-plantilla .p-pos-btn.vacio { display: inline-block; }
+        .solo-gestion { display: none !important; }
+        body.modo-gestion-plantilla .solo-gestion { display: inline-flex !important; }
+        /* ===== BANQUILLO LEGIBLE (sin transparencia) Y ARRASTRE DE TARJETAS ===== */
+        
+        .player-card { background: var(--card-pista-bg); border: 2px solid var(--card-pista-border); border-radius: 6px; }
+        .player-card.bench { opacity: 1; background: var(--card-banq-bg); border: 2px dashed var(--card-banq-border); }
+        .player-card.selected, .player-card.bench.selected { background: #1e3a8a; border-color: var(--accent-blue); box-shadow: 0 0 6px rgba(59,130,246,0.6); }
+        .player-card.excluded, .player-card.bench.excluded { background: rgba(239, 68, 68, 0.2); border-color: var(--accent-red); }
+        .p-color-input { width: 22px; height: 18px; padding: 0; border: none; background: none; cursor: pointer; }
+        .player-card { -webkit-touch-callout: none; }
+        .roster-grid { min-height: 40px; }
+        .player-card.arrastre-listo { outline: 2px solid var(--accent-gold); outline-offset: 1px; }
+        .player-card.arrastrando { opacity: 0.3; }
+        .arrastre-ghost { position: fixed !important; z-index: 90; pointer-events: none; margin: 0; opacity: 0.95; transform: scale(1.06); box-shadow: 0 8px 18px rgba(0,0,0,0.65); }
+        body.arrastrando-jugador .roster-grid { outline: 1px dashed var(--accent-gold); outline-offset: 2px; border-radius: 4px; }
+        .drop-destino { outline: 2px solid var(--accent-green) !important; outline-offset: 1px; background-color: rgba(34, 197, 94, 0.18) !important; }
+        /* ===== MODO RÁPIDO ===== */
+        .btn-modo-rapido { background: #334155; color: #fff; }
+        .btn-modo-rapido.activo { background: var(--accent-green); color: #000; }
+        body.modo-rapido #btn-reg-main, body.modo-rapido #btn-reg-main + .btn-edit-label { display: none !important; }
+        .player-card.swap-pendiente { outline: 2px dashed var(--accent-gold); outline-offset: 1px; }
+        .event-loc-btn { background: var(--accent-gold); color: #000; border: none; border-radius: 4px; padding: 2px 6px; font-size: 0.65rem; font-weight: 900; cursor: pointer; flex-shrink: 0; margin-right: 4px; }
+        #toast-rapido { position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 60; display: none; align-items: center; gap: 8px; max-width: 92vw; background: #0b1220; color: #fff; border: 1px solid var(--accent-gold); border-radius: 6px; padding: 6px 10px; font-size: 0.75rem; box-shadow: 0 2px 10px rgba(0,0,0,0.6); }
+        #toast-rapido button { background: transparent; color: #fff; border: 1px solid #475569; border-radius: 4px; cursor: pointer; font-weight: 900; padding: 2px 6px; }
+        @media (max-width: 900px) {
+            .main-layout { grid-template-columns: 1fr; grid-auto-rows: max-content; overflow-y: auto; align-content: start; }
+            .left-main-panel { overflow: visible; }
+            .right-sidebar { height: auto; overflow: visible; }
+            .event-feed { max-height: 45vh; flex-grow: 0; }
+            .roster-grid { grid-template-columns: repeat(2, 1fr); }
+            .action-grid { grid-template-columns: repeat(2, 1fr); }
+            header { padding: 4px 6px; }
+            .top-actions { flex-wrap: wrap; }
+        }
     </style>
 </head>
 <body>
@@ -219,19 +262,21 @@
     <header>
         <div class="score-container">
             <span class="editable-title-wrap"><span class="team-label" id="lbl-team-home" onclick="editarNombreEquipo('home')">SAR</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('lbl-team-home')" title="Ajustar tamaño">🔍📏</button></span>
-            <button class="timeout-badge" id="btn-timeout-home" onclick="pedirTiempoMuerto('home')" title="Pedir Tiempo Muerto SAR"><span id="txt-tm-home-label">TM:</span> <span id="count-timeout-home">1</span>/1</button>
+            <button class="timeout-badge" id="btn-timeout-home" onclick="pedirTiempoMuerto('home')" title="Pedir Tiempo Muerto SAR"><span id="txt-tm-home-label">TM:</span> <span id="count-timeout-home">1</span>/<span class="max-tm">1</span></button>
             <div class="score-box" id="score-display" onclick="editarMarcadorDirecto()">00 - 00</div>
-            <button class="timeout-badge" id="btn-timeout-away" onclick="pedirTiempoMuerto('away')" title="Pedir Tiempo Muerto Rival"><span id="txt-tm-away-label">TM:</span> <span id="count-timeout-away">1</span>/1</button>
+            <button class="timeout-badge" id="btn-timeout-away" onclick="pedirTiempoMuerto('away')" title="Pedir Tiempo Muerto Rival"><span id="txt-tm-away-label">TM:</span> <span id="count-timeout-away">1</span>/<span class="max-tm">1</span></button>
             <span class="editable-title-wrap"><span class="team-label" id="lbl-team-away" onclick="editarNombreEquipo('away')">RIVAL</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('lbl-team-away')" title="Ajustar tamaño">🔍📏</button></span>
         </div>
 
-        <div class="timer-box" id="timer-display" onclick="toggleTimer()" oncontextmenu="editarTiempoManual(event); return false;">00:00</div>
+        <div style="display:flex; align-items:center; gap:4px;"><div class="timer-box" id="timer-display" onclick="toggleTimer()" oncontextmenu="editarTiempoManual(); return false;">00:00</div><button class="timeout-badge" onclick="editarTiempoManual()" title="Ajustar el tiempo a mano (MM:SS)">✎</button><button class="timeout-badge" id="btn-parte" onclick="cambiarParte()" title="Pasar a la siguiente parte">1ª P</button></div>
 
         <div class="top-actions">
             <!-- BOTÓN PARA GESTIONAR PLANTILLA (MOSTRAR/OCULTAR LÁPIZ Y ELIMINAR JUGADORES) -->
             <button class="btn btn-purple" id="btn-toggle-gestion-plantilla" onclick="toggleModoGestionPlantilla()" title="Mostrar/Ocultar controles de edición en plantilla">⚙️ Gestionar Plantilla</button>
             <!-- BOTÓN MAESTRO PARA MOSTRAR/OCULTAR LUPAS Y LÁPICES -->
             <button class="btn btn-gold" id="btn-toggle-lupas" onclick="toggleModoAjusteTexto()" title="Mostrar/Ocultar controles de tamaño">🔍 Ajustar Textos</button>
+            <button class="btn btn-modo-rapido activo" id="btn-modo-rapido" onclick="toggleModoRapido()" title="Modo rápido: tocar una acción la registra al instante; la ubicación y los cambios se hacen en menos toques">⚡ Rápido: ON</button>
+            <button class="btn btn-blue" id="btn-deshacer" onclick="deshacerUltimo()" title="Deshacer la última acción, gol o cambio">↩ Deshacer</button>
             <button class="btn btn-gold" id="btn-header-analitica" onclick="abrirModalEstadisticas()">📈 Analítica</button><button class="btn-edit-label" onclick="ajustarTamanioElemento('btn-header-analitica')" title="Ajustar tamaño" style="color:#000;">🔍</button>
             <button class="btn btn-blue" id="btn-mode-toggle" onclick="toggleEditorDrawer()">⚙️ Editor & Carpeta</button>
             <button class="btn btn-purple" id="btn-header-excel" onclick="exportFullData()">📊 Excel</button><button class="btn-edit-label" onclick="ajustarTamanioElemento('btn-header-excel')" title="Ajustar tamaño" style="color:#fff;">🔍</button>
@@ -256,6 +301,7 @@
                         <select id="select-equipo-plantilla" class="form-control" style="padding: 2px 4px; font-size: 0.65rem; width: 110px;" onchange="cambiarPlantillaEquipo(this.value)" title="Seleccionar equipo guardado"></select>
                     </div>
                     <div style="display: flex; gap: 2px;">
+                        <button class="btn btn-purple btn-sm solo-gestion" id="btn-editar-posiciones" onclick="editarPosiciones()" title="Editar la lista de posiciones (extremos, primera línea, los tres...)">📍 Posiciones</button>
                         <button class="btn btn-gold btn-sm" id="btn-guardar-equipo-main" onclick="guardarPlantillaActual()" title="Guardar equipo actual">💾 Guardar</button><button class="btn-edit-label" onclick="ajustarTamanioElemento('btn-guardar-equipo-main')" title="Ajustar tamaño" style="color:#000;">🔍</button>
                         <button class="btn btn-green btn-sm" id="btn-add-jugador-main" onclick="agregarJugador()">+ Jugador</button><button class="btn-edit-label" onclick="ajustarTamanioElemento('btn-add-jugador-main')" title="Ajustar tamaño" style="color:#000;">🔍</button>
                     </div>
@@ -304,7 +350,7 @@
                             <button class="btn-edit-label" onclick="editarTextoEtiqueta('txt-title-ataque')" title="Editar etiqueta">✏️</button>
                             <button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-title-ataque')" title="Ajustar tamaño de texto">🔍📏</button>
                         </span>
-                        <span style="font-size:0.6rem; color:var(--text-muted);">▼</span>
+                        <span style="font-size: 0.66rem; color:var(--text-muted);">▼</span>
                     </summary>
                     <div class="action-grid" id="action-grid-attack"></div>
                 </details>
@@ -316,7 +362,7 @@
                             <button class="btn-edit-label" onclick="editarTextoEtiqueta('txt-title-defensa')" title="Editar etiqueta">✏️</button>
                             <button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-title-defensa')" title="Ajustar tamaño de texto">🔍📏</button>
                         </span>
-                        <span style="font-size:0.6rem; color:var(--text-muted);">▼</span>
+                        <span style="font-size: 0.66rem; color:var(--text-muted);">▼</span>
                     </summary>
                     <div class="action-grid" id="action-grid-defense"></div>
                 </details>
@@ -369,6 +415,7 @@
                 <div style="display: flex; gap: 4px; margin-top: 4px;">
                     <button class="btn-register-main" id="btn-reg-main" onclick="registerEvent()">✅ REGISTRAR</button><button class="btn-edit-label" onclick="ajustarTamanioElemento('btn-reg-main')" title="Ajustar tamaño" style="color:#000;">🔍</button>
                     <button class="btn-gol-rival" id="btn-gol-rival-main" onclick="abrirModalGolRival()">⚽ GOL RIVAL</button><button class="btn-edit-label" onclick="ajustarTamanioElemento('btn-gol-rival-main')" title="Ajustar tamaño" style="color:#fff;">🔍</button>
+                    <button class="btn-gol-rival" id="btn-excl-rival-main" style="background:var(--accent-gold); color:#000;" onclick="registrarExclusionRival()">🟨 EXCL. RIVAL</button>
                 </div>
             </div>
 
@@ -400,6 +447,14 @@
 
             <div class="stats-grid-cards">
                 <div class="stat-card">
+                    <div class="stat-card-val" id="stat-efic-lanzamiento">0%</div>
+                    <div class="stat-card-lbl" id="lbl-stat-efic-lanz" title="Goles / (goles + fallos)">Efic. lanzamiento</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-val" id="stat-paradas-portero">0</div>
+                    <div class="stat-card-lbl" id="lbl-stat-paradas">Paradas portero</div>
+                </div>
+                <div class="stat-card">
                     <div class="stat-card-val" id="stat-total-ataques">0</div>
                     <div class="stat-card-lbl" id="lbl-stat-ataques">Ataques</div>
                 </div>
@@ -421,7 +476,7 @@
                 </div>
                 <div class="stat-card">
                     <div class="stat-card-val" id="stat-efectividad">0%</div>
-                    <div class="stat-card-lbl" id="lbl-stat-efec">Efectividad</div>
+                    <div class="stat-card-lbl" id="lbl-stat-efec" title="Goles / ataques registrados con Iniciar-Finalizar">Efic. ataque</div>
                 </div>
             </div>
 
@@ -441,6 +496,13 @@
                 <div class="chart-container" id="chart-goles-contra-container">
                     <span style="color:var(--text-muted); font-size:0.7rem;">Sin goles en contra con ubicación aún.</span>
                 </div>
+            </div>
+
+            <div class="analysis-section">
+                <div class="analysis-title">
+                    <span class="editable-title-wrap"><span id="txt-sec-impacto-pista">⚖ Goles con cada jugador en pista</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-sec-impacto-pista')" title="Ajustar tamaño">🔍📏</button></span>
+                </div>
+                <div class="chart-container" id="impacto-pista-container" style="gap:3px;"></div>
             </div>
 
             <div class="analysis-section">
@@ -485,6 +547,15 @@
                 <div class="color-item"><label class="editable-title-wrap"><span id="lbl-col-rojo">Rojo</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('lbl-col-rojo')" title="Ajustar tamaño">🔍📏</button></label><input type="color" id="picker-red" value="#ef4444" oninput="cambiarColor('--accent-red', this.value)"></div>
                 <div class="color-item"><label class="editable-title-wrap"><span id="lbl-col-azul">Azul</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('lbl-col-azul')" title="Ajustar tamaño">🔍📏</button></label><input type="color" id="picker-blue" value="#3b82f6" oninput="cambiarColor('--accent-blue', this.value)"></div>
                 <div class="color-item"><label class="editable-title-wrap"><span id="lbl-col-dorado">Dorado</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('lbl-col-dorado')" title="Ajustar tamaño">🔍📏</button></label><input type="color" id="picker-gold" value="#facc15" oninput="cambiarColor('--accent-gold', this.value)"></div>
+                <div class="color-item"><label class="editable-title-wrap"><span id="lbl-col-card-pista-fondo">Tarjeta pista: fondo</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('lbl-col-card-pista-fondo')" title="Ajustar tamaño">🔍📏</button></label><input type="color" id="picker-card-pista-bg" value="#101c30" oninput="cambiarColor('--card-pista-bg', this.value)"></div>
+                <div class="color-item"><label class="editable-title-wrap"><span id="lbl-col-card-pista-borde">Tarjeta pista: borde</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('lbl-col-card-pista-borde')" title="Ajustar tamaño">🔍📏</button></label><input type="color" id="picker-card-pista-border" value="#22c55e" oninput="cambiarColor('--card-pista-border', this.value)"></div>
+                <div class="color-item"><label class="editable-title-wrap"><span id="lbl-col-card-banq-fondo">Tarjeta banquillo: fondo</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('lbl-col-card-banq-fondo')" title="Ajustar tamaño">🔍📏</button></label><input type="color" id="picker-card-banq-bg" value="#0c121d" oninput="cambiarColor('--card-banq-bg', this.value)"></div>
+                <div class="color-item"><label class="editable-title-wrap"><span id="lbl-col-card-banq-borde">Tarjeta banquillo: borde</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('lbl-col-card-banq-borde')" title="Ajustar tamaño">🔍📏</button></label><input type="color" id="picker-card-banq-border" value="#64748b" oninput="cambiarColor('--card-banq-border', this.value)"></div>
+            </div>
+            <div style="display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap;">
+                <button class="btn btn-green" style="flex:1; justify-content:center; padding: 5px; color:#000;" onclick="exportarPartidoJSON()">💾 Exportar partido (.json)</button>
+                <button class="btn btn-gold" style="flex:1; justify-content:center; padding: 5px;" onclick="importarPartidoJSON()">📂 Importar partido (.json)</button>
+                <button class="btn btn-blue" style="flex:1; justify-content:center; padding: 5px;" onclick="configurarTiemposMuertos()">⏱ Tiempos muertos por equipo</button>
             </div>
             <div style="display: flex; gap: 5px; margin-top: 5px;">
                 <button class="btn btn-blue" id="btn-export-config-json" style="flex:1; justify-content:center; padding: 5px;" onclick="exportarConfigJSON()">📥 Exportar Config (Archivo)</button><button class="btn-edit-label" onclick="ajustarTamanioElemento('btn-export-config-json')" title="Ajustar tamaño" style="color:#fff;">🔍</button>
@@ -498,6 +569,8 @@
         <div class="modal-content">
             <div style="font-size: 0.9rem; font-weight: 900; color: var(--accent-red); margin-bottom: 3px;" class="editable-title-wrap"><span id="txt-gol-rival-modal-h">GOL ENCAJADO (RIVAL)</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-gol-rival-modal-h')" title="Ajustar tamaño">🔍📏</button></div>
             <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 8px;" class="editable-title-wrap"><span id="txt-gol-rival-sub">Selecciona la zona de la portería:</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-gol-rival-sub')" title="Ajustar tamaño">🔍📏</button></div>
+
+            <div id="gol-rival-en-pista" style="font-size: 0.68rem; color: var(--accent-gold); margin-bottom: 6px;"></div>
 
             <div class="porteria-grid">
                 <button class="btn-zona" onclick="guardarGolRivalConZona('Superior Derecha')">Sup. Der</button>
@@ -518,15 +591,16 @@
     </div>
 
     <!-- MÓDULO EXTERNO FLOTANTE: MAPA DE TIROS Y ZONAS BASADAS EN DENSIDAD DE COORDENADAS -->
-    <button id="btn-abrir-mapa-ex" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; background: #facc15; color: #000; padding: 10px 16px; border-radius: 30px; border: none; font-weight: 900; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.5); font-size: 0.75rem;">
+    <div style="position: fixed; bottom: 12px; right: 12px; z-index: 9999; display: flex; align-items: center; gap: 4px;"><button id="btn-abrir-mapa-ex" style="background: #facc15; color: #000; padding: 10px 16px; border-radius: 30px; border: none; font-weight: 900; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.5); font-size: 0.75rem;">
         📍 <span id="txt-btn-mapa-flotante">Mapa Tiros Campo</span>
     </button>
-    <button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-btn-mapa-flotante')" title="Ajustar tamaño" style="color:#000;">🔍📏</button>
+    <button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-btn-mapa-flotante')" title="Ajustar tamaño" style="color:#000;">🔍📏</button></div>
 
     <div id="modal-mapa-ex" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 10005; justify-content: center; align-items: center;">
         <div style="background: #131c2e; padding: 16px; border-radius: 10px; width: 90vw; max-width: 460px; text-align: center; border: 2px solid #334155; box-shadow: 0 6px 20px rgba(0,0,0,0.7); color: #f8fafc; max-height: 90vh; overflow-y: auto;">
             <h3 style="margin-top: 0; color: #facc15; font-size: 0.95rem; margin-bottom: 8px;" class="editable-title-wrap"><span id="txt-mapa-ex-title">Mapa de Densidad y Zonas de Lanzamiento</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-mapa-ex-title')" title="Ajustar tamaño" style="color:#facc15;">🔍📏</button></h3>
             
+            <div style="font-size:0.62rem; color:#94a3b8; margin-bottom:6px;">Los tiros marcados aquí son solo de ubicación: no suman goles ni estadísticas de jugador. Para eso usa el panel principal.</div>
             <div style="margin-bottom: 8px; display: flex; justify-content: center; gap: 12px; font-size: 0.75rem; align-items: center;">
                 <label style="cursor: pointer; font-weight: bold; color: var(--accent-green);"><input type="radio" name="equipo-ex" value="SAR" checked onchange="actualizarVistaMapaEx()"> SAR</label>
                 <label style="cursor: pointer; font-weight: bold; color: var(--accent-red);"><input type="radio" name="equipo-ex" value="RIVAL" onchange="actualizarVistaMapaEx()"> Rival</label>
@@ -540,10 +614,10 @@
 
             <!-- CANCHA CON ZONAS DINÁMICAS Y DENSIDAD DE COORDENADAS -->
             <div id="cancha-ex" style="position: relative; width: 100%; height: 210px; background: #3b82f6; border: 2px solid #fff; border-radius: 6px; cursor: crosshair; overflow: hidden;">
-                <!-- Área de 6m -->
-                <div style="position: absolute; top: 0; left: 20%; width: 60%; height: 35%; border: 2px solid rgba(255,255,255,0.6); border-top: none; border-radius: 0 0 50px 50px; background: #0369a1; pointer-events: none;"></div>
+                <!-- Líneas de 6m y 9m (mismos radios que usa la clasificación de zonas) -->
+                <svg viewBox="0 0 300 200" preserveAspectRatio="none" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none;"><path d="M 60 0 A 90 90 0 0 0 240 0 Z" fill="#0369a1" stroke="rgba(255,255,255,0.7)" stroke-width="2"/><path d="M 30 0 A 120 120 0 0 0 270 0" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="4,4"/></svg>
                 <!-- Overlay de Densidad y Porcentajes por Zona Táctica -->
-                <div id="cancha-zonas-stats-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); padding: 4px; gap: 4px;"></div>
+                <div id="cancha-zonas-stats-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: auto; align-content: start; padding: 4px; gap: 4px;"></div>
             </div>
 
             <!-- PANEL DE ESTADÍSTICAS Y DENSIDAD POR ZONAS TÁCTICAS -->
@@ -561,7 +635,7 @@
         </div>
     </div>
 
-    <!-- ARRAY GLOBAL ÚNICO E INALTERABLE DE TIROSEX -->
+    <!-- Array global de tiros del mapa flotante (se reasigna al cargar o reiniciar un partido) -->
     <script>
         let tirosEx = [];
     </script>
@@ -580,17 +654,32 @@
         let courtCoords = { x: -20, y: -20 }, goalCoords = { x: -20, y: -20 };
         let eventsLog = [];
         let ataqueEnCurso = false;
-        let ataqueNumero = 0, ataqueInicioSeg = 0;   // nº de ataques iniciados y segundo en que empezó el actual
-        const MAX_TIEMPOS_MUERTOS = 1;
-        let timeoutsHome = 1;
-        let timeoutsAway = 1;
+        let ataqueNumero = 0, ataqueInicioSeg = 0, ataqueParticipantes = [];
+        let parte = 1;                                  // 1 = 1ª parte, 2 = 2ª parte, 3 = prórroga
+        let posiciones = [                                 // posiciones editables (nombre completo + abreviatura que se ve en la tarjeta)
+            { n: 'Portero', a: 'POR' },
+            { n: 'Extremo Izquierdo', a: 'EI' },
+            { n: 'Extremo Derecho', a: 'ED' },
+            { n: 'Primera línea (doses)', a: 'PL' },
+            { n: 'Los tres', a: '3' },
+            { n: 'Pivote', a: 'PIV' }
+        ];
+        let modoRapido = true;                         // Modo rápido: acciones al toque, ubicación después, cambios en un gesto
+        let ubicPendiente = null;                      // { id, goal, court } evento recién registrado a la espera de ubicación
+        let cambioPendienteId = null;                  // jugador marcado para un cambio
+        let ultimaClaveRapida = '', ultimaMarcaRapida = 0, toastTimer = null;   // nº de ataques iniciados y segundo en que empezó el actual
+        let MAX_TIEMPOS_MUERTOS = 3;                      // configurable desde Editor & Carpeta (reglamento IHF: 3 por partido, máx. 2 por parte)
+        let timeoutsHome = 3;
+        let timeoutsAway = 3;
         let coloresPersonalizados = {};
 
         const COORD_VERSION = 2;   // v2 = coordenadas del mapa normalizadas a 300x200
         const CLAVE_AUTOGUARDADO = 'sar_partido_en_curso';
         const PICKERS_COLOR = {
             '--bg-dark': 'picker-bg', '--panel-bg': 'picker-panel', '--accent-green': 'picker-green',
-            '--accent-red': 'picker-red', '--accent-blue': 'picker-blue', '--accent-gold': 'picker-gold'
+            '--accent-red': 'picker-red', '--accent-blue': 'picker-blue', '--accent-gold': 'picker-gold',
+            '--card-pista-bg': 'picker-card-pista-bg', '--card-pista-border': 'picker-card-pista-border',
+            '--card-banq-bg': 'picker-card-banq-bg', '--card-banq-border': 'picker-card-banq-border'
         };
         const ZONAS_TACTICAS = [
             'Extremo Izquierdo (6m)', 'Lateral Izquierdo (6m)', 'Central / Pivote (6m)',
@@ -655,6 +744,38 @@
             try { return localStorage.getItem(clave); } catch (e) { return null; }
         }
 
+        function autoAbrev(nombre) {
+            const palabras = String(nombre || '').replace(/\(.*?\)/g, ' ').split(/\s+/).filter(w => /[A-Za-zÀ-ÿ0-9]/.test(w));
+            if (palabras.length === 0) return '?';
+            if (palabras.length === 1) return palabras[0].slice(0, 3).toUpperCase();
+            return palabras.slice(0, 3).map(w => w[0]).join('').toUpperCase();
+        }
+
+        function parsearDorsal(txt) {
+            const s = String(txt == null ? '' : txt).trim();
+            return /^\d{1,3}$/.test(s) ? parseInt(s, 10) : null;
+        }
+
+        function abrevPosicion(nombre) {
+            if (!nombre) return '';
+            const f = posiciones.find(x => x.n === nombre);
+            return f ? f.a : autoAbrev(nombre);
+        }
+
+        /* "Portero=POR, Extremo Izquierdo=EI, ..." -> [{n, a}] */
+        function parsearPosiciones(texto) {
+            const salida = [];
+            String(texto || '').split(',').forEach(trozo => {
+                const t = trozo.trim();
+                if (!t) return;
+                const i = t.indexOf('=');
+                const n = (i >= 0 ? t.slice(0, i) : t).trim();
+                const a = (i >= 0 ? t.slice(i + 1) : '').trim() || autoAbrev(n);
+                if (n && !salida.some(x => x.n.toLowerCase() === n.toLowerCase())) salida.push({ n, a: a.slice(0, 4) });
+            });
+            return salida.slice(0, 14);
+        }
+
         function formatearSegundos(totalSec) {
             totalSec = Math.max(0, Math.floor(Number(totalSec) || 0));
             const m = Math.floor(totalSec / 60);
@@ -674,7 +795,10 @@
             setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 2000);
         }
 
-        window.onload = () => {
+        window.addEventListener('DOMContentLoaded', () => {
+            cargarModoRapido();
+            activarArrastreTarjetas();
+            cargarMaxTiemposMuertos();
             cargarConfigLocal();                 // PRIMERO se lee lo guardado (antes se sobrescribía con los valores por defecto)
             cargarPlantillasGuardadasSelector();
             aplicarEtiquetasGuardadas();
@@ -685,8 +809,11 @@
             actualizarMarcador();
             actualizarDisplayTiempo();
             aplicarTamaniosGuardados();
-            recuperarPartidoAutoguardado();
-        };
+            // Si no se recupera ningún partido, no queda nada de uno anterior (ni jugadores quitados a mitad de partido)
+            if (!recuperarPartidoAutoguardado()) { players = players.filter(p => !p.inactivo); renderRoster(); }
+            pintarParte();
+            try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+        });
 
         /* =====================================================================
            MODOS DE EDICIÓN / ETIQUETAS / TAMAÑOS
@@ -799,31 +926,73 @@
             guardarConfigLocal();
         }
 
-        function guardarConfigLocal() {
+        let _cfgTimer = null;
+        function guardarConfigLocal() { clearTimeout(_cfgTimer); _cfgTimer = setTimeout(() => { _cfgTimer = null; guardarConfigLocalYa(); }, 300); }
+        function guardarConfigLocalYa() {
             escribirJSON('sar_delegado_config', {
                 actions: actions, players: players,
-                colores: coloresPersonalizados, homeName: homeName, awayName: awayName
+                colores: coloresPersonalizados, homeName: homeName, awayName: awayName, posiciones: posiciones
             });
         }
 
-        function normalizarJugadores(lista) {
+        /* Los contadores (minutos, ataques, exclusión) son de un partido: solo se conservan al cargar un partido */
+        /* Sanea datos que pueden venir de un JSON importado o de la carpeta (tipos, ids, colores) */
+        const TIPOS_ACCION = ['GOL', 'FALLO', 'ASISTENCIA', 'EXCLUSION', 'PARADA_PORTERO', 'OTRO'];
+        function sanearJugadores(lista) {
+            const usados = new Set(); let extra = 0;
+            return (Array.isArray(lista) ? lista : []).filter(p => p && typeof p === 'object').map(p => {
+                let id = Number(p.id);
+                if (!Number.isFinite(id) || usados.has(id)) { id = Date.now() + (extra++); while (usados.has(id)) id++; }
+                usados.add(id);
+                const o = { ...p, id, name: String(p.name == null ? '' : p.name), posicion: p.posicion ? String(p.posicion) : '', onField: !!p.onField,
+                    number: p.number == null ? 0 : (Number.isFinite(Number(p.number)) ? Number(p.number) : String(p.number)) };
+                if (o.color && !/^#[0-9a-fA-F]{3,8}$/.test(String(o.color))) delete o.color;
+                return o;
+            });
+        }
+        function sanearAcciones(lista) {
+            const nombres = new Set(), out = [];
+            (Array.isArray(lista) ? lista : []).forEach((a, i) => {
+                if (!a || typeof a !== 'object' || !a.name) return;
+                const name = String(a.name);
+                if (nombres.has(name)) return;
+                nombres.add(name);
+                const o = { id: String(a.id || ('act_' + Date.now() + '_' + i)).replace(/[^\w-]/g, '_'), category: a.category === 'defense' ? 'defense' : 'attack', name };
+                if (TIPOS_ACCION.includes(a.tipo)) o.tipo = a.tipo;
+                out.push(o);
+            });
+            return out;
+        }
+        function sanearColores(obj) {
+            const out = {};
+            if (obj && typeof obj === 'object') Object.keys(PICKERS_COLOR).forEach(k => { if (typeof obj[k] === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(obj[k])) out[k] = obj[k]; });
+            return out;
+        }
+        function sanearPosiciones(lista) {
+            const out = (Array.isArray(lista) ? lista : []).filter(x => x && x.n).map(x => ({ n: String(x.n).slice(0, 40), a: String(x.a || autoAbrev(x.n)).slice(0, 4) })).slice(0, 14);
+            return out.length ? out : posiciones;
+        }
+        function normalizarJugadores(lista, conservarContadores) { return normalizarJugadoresBase(sanearJugadores(lista), conservarContadores); }
+        function normalizarJugadoresBase(lista, conservarContadores) {
             return (lista || []).map(p => ({
                 ...p,
-                totalSeconds: p.totalSeconds || 0,
-                attacksCount: p.attacksCount || 0,
-                exclusionSeconds: p.exclusionSeconds || 0
+                totalSeconds: conservarContadores ? (p.totalSeconds || 0) : 0,
+                attacksCount: conservarContadores ? (p.attacksCount || 0) : 0,
+                exclusionSeconds: conservarContadores ? (p.exclusionSeconds || 0) : 0,
+                segundosExcluido: conservarContadores ? (p.segundosExcluido || 0) : 0
             }));
         }
 
         function cargarConfigLocal() {
             const cfg = leerJSON('sar_delegado_config', null);
             if (!cfg || typeof cfg !== 'object') return;
-            if (Array.isArray(cfg.actions) && cfg.actions.length > 0) actions = cfg.actions;
+            { const sa = sanearAcciones(cfg.actions); if (sa.length > 0) actions = sa; }
             if (Array.isArray(cfg.players)) players = normalizarJugadores(cfg.players);
             if (cfg.colores && typeof cfg.colores === 'object') {
-                coloresPersonalizados = { ...cfg.colores };
+                coloresPersonalizados = sanearColores(cfg.colores);
                 aplicarColores(coloresPersonalizados);
             }
+            if (Array.isArray(cfg.posiciones) && cfg.posiciones.length > 0) posiciones = sanearPosiciones(cfg.posiciones);
             if (typeof cfg.homeName === 'string' && cfg.homeName.trim()) homeName = cfg.homeName;
             if (typeof cfg.awayName === 'string' && cfg.awayName.trim()) awayName = cfg.awayName;
             document.getElementById('lbl-team-home').innerText = homeName;
@@ -841,7 +1010,8 @@
 
             const plantillas = leerJSON('sar_equipos_guardados', {});
             // Se guardan los contadores a cero: una plantilla no debe arrastrar los minutos de otro partido
-            plantillas[nombreEquipo.trim()] = players.map(p => ({ ...p, totalSeconds: 0, attacksCount: 0, exclusionSeconds: 0 }));
+            if (plantillas[nombreEquipo.trim()] && !confirm(`Ya existe la plantilla "${nombreEquipo.trim()}". ¿Sobrescribirla?`)) return;
+            plantillas[nombreEquipo.trim()] = players.filter(p => !p.inactivo).map(p => ({ ...p, totalSeconds: 0, attacksCount: 0, exclusionSeconds: 0, segundosExcluido: 0 }));
             if (!escribirJSON('sar_equipos_guardados', plantillas)) { alert('No se pudo guardar: almacenamiento lleno.'); return; }
 
             cargarPlantillasGuardadasSelector();
@@ -864,6 +1034,12 @@
 
         function cambiarPlantillaEquipo(nombreEquipo) {
             if (!nombreEquipo) return;
+            if (eventsLog.length > 0 || seconds > 0) {
+                alert('Hay un partido en marcha, así que no se puede cambiar de plantilla: los datos de los jugadores actuales quedarían sin asignar.\n\nGuarda el partido en la carpeta o reinícialo con el botón 🗑 y vuelve a intentarlo.');
+                const sel = document.getElementById('select-equipo-plantilla');
+                if (sel) sel.value = '';
+                return;
+            }
             const plantillas = leerJSON('sar_equipos_guardados', {});
             if (plantillas[nombreEquipo]) {
                 players = normalizarJugadores(JSON.parse(JSON.stringify(plantillas[nombreEquipo])));
@@ -881,8 +1057,9 @@
                 tipo: 'Configuración',
                 nombre: nombrePersonalizado,
                 fecha: new Date().toLocaleString(),
+                fechaISO: new Date().toISOString(),
                 data: {
-                    actions: actions, players: players, colores: coloresPersonalizados,
+                    actions: actions, players: players, colores: coloresPersonalizados, posiciones: posiciones,
                     tamaniosTextos: leerCrudo('sar_tamanios_textos'), etiquetasTextos: leerCrudo('sar_etiquetas_textos')
                 }
             });
@@ -891,11 +1068,29 @@
             alert('¡Configuración guardada en la carpeta correctamente!');
         }
 
+        /* La alineación de cada evento se repite mucho: se guarda una tabla de alineaciones y cada evento apunta a ella */
+        function comprimirEventos(lista) {
+            const tabla = [], idx = {};
+            const out = lista.map(e => {
+                const c = { ...e };
+                if (Array.isArray(c.enPistaDetalle)) {
+                    const k = JSON.stringify(c.enPistaDetalle);
+                    if (!(k in idx)) { idx[k] = tabla.length; tabla.push(c.enPistaDetalle); }
+                    c.enPistaRef = idx[k];
+                    delete c.enPistaDetalle;
+                }
+                return c;
+            });
+            return { out, tabla };
+        }
+
         function datosPartidoActuales() {
+            const comp = comprimirEventos(eventsLog);
             return {
-                homeName, awayName, homeGoals, awayGoals, seconds, eventsLog, players, timeoutsHome, timeoutsAway,
+                homeName, awayName, homeGoals, awayGoals, seconds, eventsLog: comp.out, pistasTabla: comp.tabla, parte, maxTM: MAX_TIEMPOS_MUERTOS, players, timeoutsHome, timeoutsAway,
                 actions: actions,
                 colores: coloresPersonalizados,
+                posiciones: posiciones,
                 tamaniosTextos: leerCrudo('sar_tamanios_textos'),
                 etiquetasTextos: leerCrudo('sar_etiquetas_textos'),
                 coordVersion: COORD_VERSION,
@@ -914,6 +1109,7 @@
                 tipo: 'Partido',
                 nombre: nombrePersonalizado,
                 fecha: new Date().toLocaleString(),
+                fechaISO: new Date().toISOString(),
                 data: JSON.parse(JSON.stringify(datosPartidoActuales()))
             });
             if (!escribirJSON('sar_carpeta_guardados', carpeta)) { alert('No se pudo guardar: almacenamiento lleno.'); return; }
@@ -942,10 +1138,12 @@
                         <span class="folder-item-date">${escaparHTML(item.fecha)}</span>
                     </div>
                     <div class="folder-actions">
-                        <button class="btn btn-blue btn-sm" onclick="cargarItemCarpeta('${escaparHTML(item.id)}')">📂 Cargar</button>
-                        <button class="btn btn-red btn-sm" onclick="eliminarItemCarpeta('${escaparHTML(item.id)}')">🗑</button>
+                        <button class="btn btn-blue btn-sm" data-act="cargar">📂 Cargar</button>
+                        <button class="btn btn-red btn-sm" data-act="eliminar">🗑</button>
                     </div>
                 `;
+                div.querySelector('[data-act="cargar"]').addEventListener('click', () => cargarItemCarpeta(item.id));
+                div.querySelector('[data-act="eliminar"]').addEventListener('click', () => eliminarItemCarpeta(item.id));
                 container.appendChild(div);
             });
         }
@@ -954,6 +1152,7 @@
             const carpeta = leerJSON('sar_carpeta_guardados', []);
             const item = carpeta.find(x => x.id === id);
             if (!item) return;
+            if (item.tipo === 'Configuración' && (eventsLog.length > 0 || seconds > 0)) { alert('Hay un partido en marcha, así que no se puede cargar una configuración: los datos de los jugadores actuales quedarían sin asignar.\n\nGuarda el partido en la carpeta o reinícialo con el botón 🗑 y vuelve a intentarlo.'); return; }
 
             if (confirm(`¿Estás seguro de cargar "${item.nombre}"?`)) {
                 if (item.data && item.data.tamaniosTextos) {
@@ -965,13 +1164,14 @@
                     aplicarEtiquetasGuardadas();
                 }
                 if (item.data && item.data.colores && typeof item.data.colores === 'object') {
-                    coloresPersonalizados = { ...item.data.colores };
+                    coloresPersonalizados = sanearColores(item.data.colores);
                     aplicarColores(coloresPersonalizados);
                 }
                 if (item.data && item.data.actions) {
-                    actions = item.data.actions;
+                    { const sa = sanearAcciones(item.data.actions); if (sa.length) actions = sa; }
                     renderActions();
                 }
+                if (item.data && Array.isArray(item.data.posiciones) && item.data.posiciones.length > 0) posiciones = sanearPosiciones(item.data.posiciones);
 
                 if (item.tipo === 'Configuración') {
                     players = normalizarJugadores(item.data.players);
@@ -995,13 +1195,15 @@
         }
 
         function exportarConfigJSON() {
-            guardarConfigLocal();
-            const config = leerCrudo('sar_delegado_config') || '{}';
-            const blob = new Blob([config], { type: 'application/json' });
-            descargarBlob(blob, 'sar_delegado_config.json');
+            guardarConfigLocalYa();
+            const cfg = leerJSON('sar_delegado_config', {});
+            cfg.etiquetasTextos = leerJSON('sar_etiquetas_textos', {});      // ahora la exportación incluye etiquetas y tamaños de texto
+            cfg.tamaniosTextos = leerJSON('sar_tamanios_textos', {});
+            descargarBlob(new Blob([JSON.stringify(cfg)], { type: 'application/json' }), 'sar_delegado_config.json');
         }
 
         function importarConfigJSON() {
+            if (eventsLog.length > 0 || seconds > 0) { alert('Hay un partido en marcha, así que no se puede importar una configuración: los datos de los jugadores actuales quedarían sin asignar.\n\nGuarda el partido en la carpeta o reinícialo con el botón 🗑 y vuelve a intentarlo.'); return; }
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = '.json';
@@ -1013,7 +1215,15 @@
                     try {
                         const parsed = JSON.parse(event.target.result);          // se valida ANTES de guardar
                         if (!parsed || typeof parsed !== 'object') throw new Error('formato');
-                        if (!escribirJSON('sar_delegado_config', parsed)) throw new Error('almacenamiento');
+                        const limpio = {
+                            actions: sanearAcciones(parsed.actions), players: normalizarJugadores(parsed.players), colores: sanearColores(parsed.colores),
+                            homeName: String(parsed.homeName || homeName).slice(0, 40), awayName: String(parsed.awayName || awayName).slice(0, 40),
+                            posiciones: sanearPosiciones(parsed.posiciones)
+                        };
+                        if (!limpio.players.length) delete limpio.players;
+                        if (!escribirJSON('sar_delegado_config', limpio)) throw new Error('almacenamiento');
+                        if (parsed.etiquetasTextos && typeof parsed.etiquetasTextos === 'object') { escribirJSON('sar_etiquetas_textos', parsed.etiquetasTextos); aplicarEtiquetasGuardadas(); }
+                        if (parsed.tamaniosTextos && typeof parsed.tamaniosTextos === 'object') { escribirJSON('sar_tamanios_textos', parsed.tamaniosTextos); aplicarTamaniosGuardados(); }
                         cargarConfigLocal();
                         alert('¡Configuración importada correctamente!');
                     } catch (err) { alert('Error al importar el archivo JSON'); }
@@ -1030,19 +1240,29 @@
             const field = document.getElementById('roster-field'), bench = document.getElementById('roster-bench');
             field.innerHTML = ''; bench.innerHTML = '';
 
-            if (players.length > 0 && !players.some(p => p.id === selectedPlayerId)) selectedPlayerId = players[0].id;
+            const activos = players.filter(p => !p.inactivo);
+            if (activos.length > 0 && !activos.some(p => p.id === selectedPlayerId)) selectedPlayerId = activos[0].id;
 
-            players.forEach(p => {
+            activos.forEach(p => {
                 const card = document.createElement('div');
                 const isExcluded = (p.exclusionSeconds || 0) > 0;
-                card.className = `player-card ${p.id === selectedPlayerId ? 'selected' : ''} ${!p.onField ? 'bench' : ''} ${isExcluded ? 'excluded' : ''}`;
-                card.onclick = () => { selectedPlayerId = p.id; renderRoster(); };
+                card.className = `player-card ${p.id === selectedPlayerId ? 'selected' : ''} ${!p.onField ? 'bench' : ''} ${isExcluded ? 'excluded' : ''} ${p.id === cambioPendienteId ? 'swap-pendiente' : ''}`;
+                if (p.color && p.id !== selectedPlayerId && !isExcluded) card.style.borderColor = p.color;
+                card.setAttribute('data-pid', p.id);
+                card.onclick = () => {
+                    if (Date.now() - ultimoArrastre < 400) return;     // el clic que sigue a un arrastre no selecciona
+                    selectedPlayerId = p.id;
+                    renderRoster();
+                };
+                prepararArrastreTarjeta(card, p);
 
                 const minSec = formatearSegundos(p.totalSeconds || 0);
+                const posBtn = `<button class="p-pos-btn ${p.posicion ? '' : 'vacio'}" id="p-pos-${p.id}" title="Posición: ${escaparHTML(p.posicion || 'sin asignar')} (en Gestionar Plantilla, toca para cambiarla)" onclick="event.stopPropagation(); ciclarPosicion(${p.id})">${p.posicion ? escaparHTML(abrevPosicion(p.posicion)) : '+ Pos'}</button>`;
                 let badgeHtml = `<div class="player-time-badge" id="p-time-${p.id}">⏱ ${minSec} | ⚔ ${p.attacksCount || 0}</div>`;
                 if (isExcluded) {
                     badgeHtml += ` <div class="player-exclusion-badge" id="p-exc-${p.id}">2m: ${formatearSegundos(p.exclusionSeconds)}</div>`;
                 }
+                badgeHtml = `<div style="display:flex; gap:3px; align-items:center; flex-wrap:wrap;">${posBtn}${badgeHtml}</div>`;
 
                 card.innerHTML = `
                     <div class="player-info">
@@ -1050,6 +1270,7 @@
                             <span class="player-number editable-title-wrap"><span id="p-num-${p.id}">#${escaparHTML(p.number)}</span><button class="btn-edit-label" onclick="event.stopPropagation(); ajustarTamanioElemento('p-num-${p.id}')" title="Ajustar tamaño dorsal">🔍</button></span>
                             <span class="player-name editable-title-wrap"><span id="p-name-${p.id}">${escaparHTML(p.name)}</span><button class="btn-edit-label" onclick="event.stopPropagation(); ajustarTamanioElemento('p-name-${p.id}')" title="Ajustar tamaño nombre">🔍</button></span>
                             <div class="player-actions-group">
+                                <span class="solo-gestion p-color-wrap"><input type="color" class="p-color-input" value="${escaparHTML(p.color || (p.onField ? (coloresPersonalizados['--card-pista-border'] || '#22c55e') : (coloresPersonalizados['--card-banq-border'] || '#64748b')))}" onclick="event.stopPropagation()" onchange="cambiarColorJugador(${p.id}, this.value)" title="Color del recuadro de este jugador">${p.color ? `<button class="p-action-btn p-btn-edit" onclick="event.stopPropagation(); quitarColorJugador(${p.id})" title="Quitar el color propio (usa el general)">⊘</button>` : ''}</span>
                                 <span class="editable-title-wrap"><button class="p-action-btn p-btn-exc" id="btn-exc-p-${p.id}" title="Exclusión 2m" onclick="event.stopPropagation(); aplicarExclusion(${p.id})">2m</button><button class="btn-edit-label" id="p-exc-btn-${p.id}" onclick="event.stopPropagation(); ajustarTamanioElemento('btn-exc-p-${p.id}')" title="Ajustar tamaño 2m">🔍</button></span>
                                 <button class="p-action-btn p-btn-edit" title="Editar jugador" onclick="event.stopPropagation(); editarJugador(${p.id})">✏️</button>
                                 <span class="editable-title-wrap"><button class="p-action-btn p-btn-toggle" id="btn-toggle-p-${p.id}" title="Cambiar a Pista/Banquillo" onclick="event.stopPropagation(); alternarEstadoJugador(${p.id})">⇄</button><button class="btn-edit-label" id="p-toggle-btn-${p.id}" onclick="event.stopPropagation(); ajustarTamanioElemento('btn-toggle-p-${p.id}')" title="Ajustar tamaño ⇄">🔍</button></span>
@@ -1069,6 +1290,7 @@
         function actualizarBadgesJugadores() {
             let rehacer = false;
             players.forEach(p => {
+                if (p.inactivo) return;
                 const t = document.getElementById('p-time-' + p.id);
                 if (t) t.innerText = `⏱ ${formatearSegundos(p.totalSeconds || 0)} | ⚔ ${p.attacksCount || 0}`;
                 const excluido = (p.exclusionSeconds || 0) > 0;
@@ -1082,10 +1304,13 @@
         function agregarJugador() {
             const num = prompt('Dorsal del jugador:');
             if (num === null) return;
+            const dorsal = parsearDorsal(num);
+            if (dorsal === null) { alert('Dorsal no válido: escribe un número entero (0-999).'); return; }
+            if (players.some(p => !p.inactivo && p.number === dorsal) && !confirm(`Ya hay un jugador con el dorsal ${dorsal}. ¿Añadirlo igualmente?`)) return;
             const nombre = prompt('Nombre del jugador:') || `Jugador #${num}`;
             let id = Date.now();
             while (players.some(p => p.id === id)) id++;
-            players.push({ id, number: parseInt(num) || 0, name: nombre, onField: true, totalSeconds: 0, attacksCount: 0, exclusionSeconds: 0 });
+            players.push({ id, number: dorsal, name: nombre, posicion: '', onField: true, totalSeconds: 0, attacksCount: 0, exclusionSeconds: 0 });
             selectedPlayerId = id;
             renderRoster();
         }
@@ -1097,14 +1322,61 @@
             if (nuevoNum === null) return;
             const nuevoNombre = prompt('Editar nombre:', p.name);
             if (nuevoNombre === null) return;
-            p.number = parseInt(nuevoNum) || p.number;
+            const dNuevo = parsearDorsal(nuevoNum);
+            if (dNuevo !== null) p.number = dNuevo; else alert('Dorsal no válido; se mantiene el anterior.');
             p.name = nuevoNombre.trim() || p.name;
+            renderRoster();
+        }
+
+        /* En "Gestionar Plantilla": tocar la etiqueta de posición la cambia (siguiente de la lista, y al final "sin posición") */
+        function ciclarPosicion(id) {
+            const p = players.find(x => x.id === id);
+            if (!p || posiciones.length === 0) return;
+            const i = posiciones.findIndex(x => x.n === p.posicion);
+            const sig = (i + 1) % (posiciones.length + 1);          // sin posición -> primera ; última -> sin posición
+            p.posicion = sig < posiciones.length ? posiciones[sig].n : '';
+            renderRoster();
+        }
+
+        function editarPosiciones() {
+            const actual = posiciones.map(x => `${x.n}=${x.a}`).join(', ');
+            const txt = prompt('Posiciones separadas por comas. Formato: Nombre=Abreviatura (la abreviatura es opcional).', actual);
+            if (txt === null) return;
+            const lista = parsearPosiciones(txt);
+            if (lista.length === 0) { alert('Escribe al menos una posición.'); return; }
+            posiciones = lista;
+            renderRoster();
+        }
+
+        function cambiarColorJugador(id, valor) {
+            const p = players.find(x => x.id === id);
+            if (!p) return;
+            p.color = valor;
+            renderRoster();
+        }
+
+        function quitarColorJugador(id) {
+            const p = players.find(x => x.id === id);
+            if (!p) return;
+            delete p.color;
             renderRoster();
         }
 
         function eliminarJugador(id) {
             const p = players.find(x => x.id === id);
             if (!p) return;
+            const partidoEnMarcha = eventsLog.length > 0 || seconds > 0;
+            if (partidoEnMarcha) {
+                if (confirm(`#${p.number} ${p.name} ya forma parte de este partido.\n\nNo se borrará: dejará de verse en la plantilla, pero sus acciones y minutos se conservarán en Analítica y en el Excel.\n\n¿Quitarlo de la plantilla?`)) {
+                    p.inactivo = true;
+                    p.onField = false;
+                    if (cambioPendienteId === id) cambioPendienteId = null;
+                    p.exclusionSeconds = 0;
+                    if (selectedPlayerId === id) selectedPlayerId = null;
+                    renderRoster();
+                }
+                return;
+            }
             if (confirm(`¿Eliminar al jugador #${p.number} - ${p.name} de la plantilla?`)) {
                 players = players.filter(x => x.id !== id);
                 renderRoster();
@@ -1114,6 +1386,12 @@
         function alternarEstadoJugador(id) {
             const p = players.find(x => x.id === id);
             if (!p) return;
+            // Con el partido en marcha y el modo rápido activo: toca ⇄ de uno y ⇄ de otro y se intercambian
+            if (modoRapido && (timerInterval !== null || seconds > 0)) { gestionarCambioRapido(p); return; }
+            alternarEstadoSimple(p);
+        }
+
+        function alternarEstadoSimple(p) {
             p.onField = !p.onField;
             // Los cambios se registran en la cronología solo cuando el partido ya está en marcha
             if (timerInterval !== null || seconds > 0) {
@@ -1130,6 +1408,7 @@
         function aplicarExclusion(id) {
             const p = players.find(x => x.id === id);
             if (!p) return;
+            if ((p.exclusionSeconds || 0) > 0 && !confirm(`#${p.number} ${p.name} ya está excluido. ¿Registrar otra exclusión?`)) return;
             p.exclusionSeconds = 120; // 2 minutos de exclusión
             crearEvento({
                 lado: 'home', categoria: 'DEFENSA', tipo: 'EXCLUSION', accion: 'Exclusión 2m',
@@ -1137,36 +1416,59 @@
             });
             renderFeed();
             renderRoster();
+            avisarTerceraExclusion(p);
+        }
+
+        function avisarTerceraExclusion(p) {
+            const n = eventsLog.filter(e => e.tipo === 'EXCLUSION' && e.lado === 'home' && e.jugadorId === p.id).length;
+            if (n >= 3) alert(`⚠ #${p.number} ${p.name} acumula ${n} exclusiones de 2 min: la 3ª exclusión implica descalificación. Revisa el acta.`);
+        }
+
+        function registrarExclusionRival() {
+            crearEvento({ lado: 'away', categoria: 'DEFENSA', tipo: 'EXCLUSION', accion: 'Exclusión 2m (rival)', dorsal: '-', jugador: 'Rival' });
+            renderFeed();
+            mostrarToastRapido('🟨 Exclusión 2m del rival registrada', 2000);
         }
 
         function pedirTiempoMuerto(equipo) {
-            if (equipo === 'home') {
-                if (timeoutsHome <= 0) {
-                    alert('El equipo SAR ya ha gastado su tiempo muerto.');
-                    return;
-                }
-                timeoutsHome--;
-            } else {
-                if (timeoutsAway <= 0) {
-                    alert('El equipo Rival ya ha gastado su tiempo muerto.');
-                    return;
-                }
-                timeoutsAway--;
-            }
-            actualizarTimeoutsUI();
-
             const lado = equipo === 'home' ? 'home' : 'away';
+            const restantes = lado === 'home' ? timeoutsHome : timeoutsAway;
             const nombreEq = nombreEquipoPorLado(lado);
+            if (restantes <= 0) { alert(`${nombreEq} ya ha gastado sus tiempos muertos.`); return; }
+            if (!confirm(`¿Registrar tiempo muerto de ${nombreEq}? (le quedarán ${restantes - 1})`)) return;
+            if (lado === 'home') timeoutsHome--; else timeoutsAway--;
+            actualizarTimeoutsUI();
             crearEvento({
                 lado, categoria: 'TIEMPO_MUERTO', tipo: 'TIEMPO_MUERTO',
                 accion: `⏱ Tiempo Muerto (${nombreEq})`, dorsal: '-', jugador: 'Equipo'
             });
             renderFeed();
+            if (timerInterval) { toggleTimer(); mostrarToastRapido('⏸ Reloj pausado por tiempo muerto. Toca el reloj para reanudar.', 4000); }
+        }
+
+        function cargarMaxTiemposMuertos() {
+            const v = parseInt(leerCrudo('sar_max_tm'), 10);
+            if (Number.isFinite(v) && v >= 1 && v <= 10) MAX_TIEMPOS_MUERTOS = v;
+            timeoutsHome = MAX_TIEMPOS_MUERTOS; timeoutsAway = MAX_TIEMPOS_MUERTOS;
+        }
+
+        function configurarTiemposMuertos() {
+            const txt = prompt('Tiempos muertos por equipo y partido (1-10):', String(MAX_TIEMPOS_MUERTOS));
+            if (txt === null) return;
+            const v = parseInt(txt, 10);
+            if (!Number.isFinite(v) || v < 1 || v > 10) { alert('Valor no válido.'); return; }
+            const usadosH = MAX_TIEMPOS_MUERTOS - timeoutsHome, usadosA = MAX_TIEMPOS_MUERTOS - timeoutsAway;
+            MAX_TIEMPOS_MUERTOS = v;
+            timeoutsHome = Math.max(0, v - usadosH); timeoutsAway = Math.max(0, v - usadosA);
+            try { localStorage.setItem('sar_max_tm', String(v)); } catch (e) {}
+            actualizarTimeoutsUI();
+            autoguardarPartido();
         }
 
         function actualizarTimeoutsUI() {
             document.getElementById('count-timeout-home').innerText = timeoutsHome;
             document.getElementById('count-timeout-away').innerText = timeoutsAway;
+            document.querySelectorAll('.max-tm').forEach(n => { n.innerText = MAX_TIEMPOS_MUERTOS; });
         }
 
         /* =====================================================================
@@ -1189,6 +1491,7 @@
                 btn.onclick = () => {
                     selectedAction = a.name;
                     renderActions();
+                    if (modoRapido) registrarRapido();
                 };
 
                 const editSizeBtn = document.createElement('button');
@@ -1202,6 +1505,16 @@
                 editSizeBtn.style.color = '#fff';
                 editSizeBtn.onclick = (e) => { e.stopPropagation(); ajustarTamanioElemento(`txt-act-${a.id}`); };
 
+                const renBtn = document.createElement('button');
+                renBtn.className = 'btn-edit-label';
+                renBtn.innerHTML = '✏️';
+                renBtn.title = 'Renombrar acción';
+                renBtn.style.position = 'absolute';
+                renBtn.style.right = '2px';
+                renBtn.style.bottom = '1px';
+                renBtn.style.fontSize = '9px';
+                renBtn.onclick = (e) => { e.stopPropagation(); renombrarAccion(a.id); };
+
                 const del = document.createElement('button');
                 del.className = 'action-del-btn';
                 del.innerText = '×';
@@ -1209,6 +1522,7 @@
 
                 wrap.appendChild(btn);
                 wrap.appendChild(editSizeBtn);
+                wrap.appendChild(renBtn);
                 wrap.appendChild(del);
 
                 if (a.category === 'attack') gridAttack.appendChild(wrap);
@@ -1218,15 +1532,42 @@
             aplicarTamaniosGuardados();
         }
 
+        function textoATipo(txt) {
+            const s = String(txt || '').toLowerCase();
+            if (/parad/.test(s) && /portero/.test(s)) return 'PARADA_PORTERO';
+            if (/exclu/.test(s)) return 'EXCLUSION';
+            if (/asist/.test(s)) return 'ASISTENCIA';
+            if (/fallo|fuera|parad/.test(s)) return 'FALLO';
+            if (/gol/.test(s)) return 'GOL';
+            return 'OTRO';
+        }
+
         function crearNuevaAccion() {
             const cat = prompt('Categoría (escribe "ataque" o "defensa"):', 'ataque');
             if (!cat) return;
             const normalizedCat = cat.toLowerCase().includes('def') ? 'defense' : 'attack';
             const nombre = prompt(`Nueva etiqueta de ${normalizedCat.toUpperCase()}:`);
             if (!nombre || nombre.trim() === '') return;
+            if (actions.some(a => a.name.toLowerCase() === nombre.trim().toLowerCase())) { alert('Ya existe una acción con ese nombre.'); return; }
 
-            actions.push({ id: 'act_' + Date.now(), category: normalizedCat, name: nombre.trim() });
+            const sugerido = { GOL: 'gol', FALLO: 'fallo', ASISTENCIA: 'asistencia', EXCLUSION: 'exclusion', PARADA_PORTERO: 'parada portero', OTRO: 'otro' }[clasificarAccion(nombre)];
+            const tipoTxt = prompt('¿Cómo cuenta esta acción en las estadísticas?\n\ngol (suma al marcador) / fallo / asistencia / exclusion / parada portero / otro', sugerido);
+            if (tipoTxt === null) return;
+
+            actions.push({ id: 'act_' + Date.now(), category: normalizedCat, name: nombre.trim(), tipo: textoATipo(tipoTxt) });
             selectedAction = nombre.trim();
+            renderActions();
+        }
+
+        function renombrarAccion(id) {
+            const a = actions.find(x => x.id === id);
+            if (!a) return;
+            const nuevo = prompt('Nuevo nombre de la acción (los eventos ya registrados conservan el anterior):', a.name);
+            if (nuevo === null || !nuevo.trim() || nuevo.trim() === a.name) return;
+            if (actions.some(x => x.id !== id && x.name.toLowerCase() === nuevo.trim().toLowerCase())) { alert('Ya existe una acción con ese nombre.'); return; }
+            if (!a.tipo) a.tipo = clasificarAccion(a.name);        // el renombrado no cambia cómo cuenta la acción
+            if (selectedAction === a.name) selectedAction = nuevo.trim();
+            a.name = nuevo.trim();
             renderActions();
         }
 
@@ -1240,11 +1581,18 @@
         /* Clasificación explícita de cada acción (ya no se usa includes('gol') a ciegas) */
         function clasificarAccion(nombre) {
             const n = String(nombre || '').toLowerCase();
-            if (/\bgol(es)?\b/.test(n)) return 'GOL';
-            if (/asistencia/.test(n)) return 'ASISTENCIA';
             if (/exclusi[oó]n/.test(n)) return 'EXCLUSION';
-            if (/fallo/.test(n) || (/parada/.test(n) && !/portero/.test(n))) return 'FALLO';
+            if (/asistencia/.test(n)) return 'ASISTENCIA';
+            if (/parada/.test(n) && /portero/.test(n)) return 'PARADA_PORTERO';
+            if (/fallo|parad[oó]n|\bparada\b/.test(n)) return 'FALLO';
+            if (/\bgol(es)?\b/.test(n)) return 'GOL';
             return 'OTRO';
+        }
+
+        /* Si la acción tiene tipo explícito se usa ese; si no (configuraciones antiguas) se deduce del nombre */
+        function tipoDeAccion(nombre) {
+            const a = actions.find(x => x.name === nombre);
+            return (a && TIPOS_ACCION.includes(a.tipo)) ? a.tipo : clasificarAccion(nombre);
         }
 
         /* =====================================================================
@@ -1261,8 +1609,13 @@
             if (delta <= 0) return;
             for (let i = 0; i < delta; i++) {
                 players.forEach(p => {
-                    if (p.onField) p.totalSeconds = (p.totalSeconds || 0) + 1;
-                    if ((p.exclusionSeconds || 0) > 0) p.exclusionSeconds--;
+                    const excluido = (p.exclusionSeconds || 0) > 0;
+                    if (excluido) {
+                        p.exclusionSeconds--;                                   // cumple su exclusión: fuera de pista
+                        p.segundosExcluido = (p.segundosExcluido || 0) + 1;
+                    } else if (p.onField) {
+                        p.totalSeconds = (p.totalSeconds || 0) + 1;
+                    }
                 });
             }
             seconds = objetivo;
@@ -1286,15 +1639,40 @@
             document.getElementById('timer-display').innerText = formatearSegundos(seconds);
         }
 
-        function editarTiempoManual(e) {
+        function editarTiempoManual() {
             const nuevo = prompt('Ajustar tiempo (MM:SS):', document.getElementById('timer-display').innerText);
-            if (nuevo && nuevo.includes(':')) {
-                const partes = nuevo.split(':');
-                seconds = Math.max(0, (parseInt(partes[0]) || 0) * 60 + (parseInt(partes[1]) || 0));
-                rebasarCronometro();
-                actualizarDisplayTiempo();
-                autoguardarPartido();
-            }
+            if (nuevo === null) return;
+            const m = String(nuevo).trim().match(/^(\d{1,3}):([0-5]?\d)$/);
+            if (!m) { alert('Formato no válido. Usa MM:SS (por ejemplo 31:05).'); return; }
+            seconds = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+            rebasarCronometro();
+            actualizarDisplayTiempo();
+            autoguardarPartido(true);
+        }
+
+        const NOMBRE_PARTE = { 1: '1ª P', 2: '2ª P', 3: 'Prór.' };
+        function pintarParte() {
+            const b = document.getElementById('btn-parte');
+            if (b) b.innerText = NOMBRE_PARTE[parte] || (parte + 'ª P');
+        }
+
+        function cambiarParte() {
+            if (parte >= 3) { alert('Ya estás en la prórroga.'); return; }
+            const sig = parte + 1;
+            const txt = prompt(`Pasar a ${sig === 2 ? 'la 2ª parte' : 'la prórroga'}. Minuto del reloj en el que empieza:`, sig === 2 ? '30' : '60');
+            if (txt === null) return;
+            const min = parseInt(txt, 10);
+            if (!Number.isFinite(min) || min < 0) { alert('Minuto no válido.'); return; }
+            if (timerInterval) toggleTimer();
+            crearEvento({ lado: 'home', categoria: 'PARTE', tipo: 'CAMBIO_PARTE', accion: sig === 2 ? 'Inicio 2ª parte' : 'Inicio prórroga', dorsal: '-', jugador: 'Delegado', parteAnterior: parte });
+            parte = sig;
+            eventsLog[0].parte = parte;
+            seconds = Math.max(seconds, min * 60);
+            rebasarCronometro();
+            actualizarDisplayTiempo();
+            pintarParte();
+            renderFeed();
+            mostrarToastRapido(`▶ ${sig === 2 ? '2ª parte' : 'Prórroga'}: reloj en ${formatearSegundos(seconds)} (pausado). Toca el reloj para empezar.`, 5000);
         }
 
         function actualizarMarcador() {
@@ -1303,13 +1681,20 @@
 
         function editarMarcadorDirecto() {
             const res = prompt('Ajustar marcador (LOCAL - RIVAL):', `${homeGoals}-${awayGoals}`);
-            if (res && res.includes('-')) {
-                const partes = res.split('-');
-                homeGoals = Math.max(0, parseInt(partes[0]) || 0);
-                awayGoals = Math.max(0, parseInt(partes[1]) || 0);
-                actualizarMarcador();
-                autoguardarPartido();
+            if (res === null) return;
+            const m = String(res).trim().match(/^(\d{1,3})\s*-\s*(\d{1,3})$/);
+            if (!m) { alert('Formato no válido. Usa LOCAL-RIVAL, por ejemplo 12-10.'); return; }
+            const prevL = homeGoals, prevR = awayGoals;
+            homeGoals = parseInt(m[1], 10);
+            awayGoals = parseInt(m[2], 10);
+            actualizarMarcador();
+            if (prevL !== homeGoals || prevR !== awayGoals) {      // el ajuste queda en la cronología para que Analítica y Excel puedan explicarlo
+                crearEvento({ lado: 'home', categoria: 'AJUSTE', tipo: 'AJUSTE',
+                    accion: `Ajuste manual del marcador (${prevL}-${prevR} → ${homeGoals}-${awayGoals})`, dorsal: '-', jugador: 'Delegado',
+                    ajusteLocal: homeGoals, ajusteRival: awayGoals, prevLocal: prevL, prevRival: prevR });
+                renderFeed();
             }
+            autoguardarPartido();
         }
 
         function editarNombreEquipo(tipo) {
@@ -1355,8 +1740,17 @@
                 numEnPista: players.filter(p => p.onField).length,
                 excluidos: players.filter(p => (p.exclusionSeconds || 0) > 0).map(p => p.number).join('-'),
                 ataqueNum: ataqueEnCurso ? ataqueNumero : '',
-                inicioAtaque: '', duracionAtaque: ''
+                parte: parte,
+                inicioAtaque: '', duracionAtaque: '',
+                cambioId: '',
+                // Quién estaba en pista en ese instante: [id, dorsal, nombre, posición, excluido(1/0)]
+                enPistaDetalle: players.filter(p => p.onField).map(p => [p.id, p.number, p.name, p.posicion || '', (p.exclusionSeconds || 0) > 0 ? 1 : 0]),
+                posicionJugador: ''
             }, datos);
+            if (!ev.posicionJugador && ev.jugadorId != null) {
+                const pj = players.find(x => x.id === ev.jugadorId);
+                ev.posicionJugador = pj ? (pj.posicion || '') : '';
+            }
             if (!datos.equipo) ev.equipo = nombreEquipoPorLado(ev.lado);
             eventsLog.unshift(ev);
             return ev;
@@ -1387,8 +1781,9 @@
                 e.golesRival = m ? parseInt(m[2]) : '';
             }
             if (e.jugadorId === undefined) e.jugadorId = null;
-            ['enPista', 'excluidos', 'ataqueNum', 'inicioAtaque', 'duracionAtaque'].forEach(k => { if (e[k] === undefined) e[k] = ''; });
+            ['enPista', 'excluidos', 'ataqueNum', 'inicioAtaque', 'duracionAtaque', 'cambioId', 'posicionJugador', 'parte'].forEach(k => { if (e[k] === undefined) e[k] = ''; });
             if (e.numEnPista === undefined) e.numEnPista = '';
+            if (e.enPistaDetalle === undefined) e.enPistaDetalle = null;
             if (e.golX === undefined) { e.golX = '-'; e.golY = '-'; }
             if (e.tipo === 'TIRO_MAPA') {
                 if (!e.resultado) {
@@ -1397,12 +1792,402 @@
                 }
                 if (e.campoX !== '-' && e.campoY !== '-') e.zonaCampo = obtenerZonaTacticaCampo(Number(e.campoX), Number(e.campoY));
                 e.zonaPorteriaEscrita = '-';
-            } else if (e.zonaCampo === undefined) {
+            } else {
                 e.zonaCampo = (e.campoX !== undefined && e.campoX !== '-' && e.campoY !== '-')
                     ? obtenerZonaTacticaCampo(Number(e.campoX), Number(e.campoY)) : '-';
             }
             if (e.zonaPorteriaEscrita === 'Centro') e.zonaPorteriaEscrita = 'Media Centro';   // unifica el nombre de la zona central
             return e;
+        }
+
+        /* Jugadores que estaban realmente en pista en un evento (los excluidos no cuentan).
+           Para partidos antiguos (sin detalle) se reconstruye a partir de los dorsales. */
+        function pistaEfectivaDeEvento(e) {
+            if (Array.isArray(e.enPistaDetalle)) {
+                return e.enPistaDetalle.filter(x => !x[4]).map(x => ({ id: x[0], n: x[1], nm: x[2], pos: x[3] }));
+            }
+            if (e.enPista) {
+                const ex = String(e.excluidos || '').split('-');
+                return String(e.enPista).split('-').filter(n => n && !ex.includes(n)).map(n => {
+                    const pl = players.find(x => String(x.number) === n);
+                    return { id: pl ? pl.id : null, n: Number(n), nm: pl ? pl.name : '', pos: pl ? (pl.posicion || '') : '' };
+                });
+            }
+            return null;
+        }
+
+        function textoPistaCorto(e) {
+            const x = pistaEfectivaDeEvento(e);
+            if (!x || x.length === 0) return '';
+            return x.map(q => `${q.n}${q.pos ? '(' + abrevPosicion(q.pos) + ')' : ''}`).join(' ');
+        }
+
+        function textoPistaActual() {
+            const x = players.filter(pl => pl.onField && !((pl.exclusionSeconds || 0) > 0));
+            if (x.length === 0) return 'nadie en pista';
+            return x.map(q => `${q.number}${q.posicion ? '(' + abrevPosicion(q.posicion) + ')' : ''}`).join(' ');
+        }
+
+        /* Goles a favor / en contra con cada jugador en pista */
+        function calcularImpactoPista() {
+            const res = {};
+            players.forEach(pl => { res[pl.id] = { gf: 0, gc: 0 }; });
+            eventsLog.forEach(e => {
+                const favor = e.tipo === 'GOL' && e.lado === 'home';
+                const contra = e.tipo === 'GOL_ENCAJADO';
+                if (!favor && !contra) return;
+                const pista = pistaEfectivaDeEvento(e);
+                if (!pista) return;
+                pista.forEach(x => {
+                    const r = x.id != null ? res[x.id] : null;
+                    if (!r) return;
+                    if (favor) r.gf++; else r.gc++;
+                });
+            });
+            return res;
+        }
+
+        /* =====================================================================
+           MODO RÁPIDO
+           ===================================================================== */
+        function cargarModoRapido() {
+            const v = leerCrudo('sar_modo_rapido');
+            modoRapido = (v === null) ? true : v === '1';
+            pintarModoRapido();
+        }
+
+        function pintarModoRapido() {
+            document.body.classList.toggle('modo-rapido', modoRapido);
+            const b = document.getElementById('btn-modo-rapido');
+            if (b) {
+                b.classList.toggle('activo', modoRapido);
+                b.innerText = modoRapido ? '⚡ Rápido: ON' : '⚡ Rápido: OFF';
+            }
+        }
+
+        function toggleModoRapido() {
+            modoRapido = !modoRapido;
+            try { localStorage.setItem('sar_modo_rapido', modoRapido ? '1' : '0'); } catch (e) {}
+            cancelarPendientesRapidos();
+            pintarModoRapido();
+            mostrarToastRapido(modoRapido
+                ? '⚡ Modo rápido ACTIVADO: tocar una acción la registra al instante.'
+                : 'Modo rápido desactivado: vuelves al funcionamiento clásico (con REGISTRAR).', 4000);
+        }
+
+        /* Aviso discreto, no bloqueante, al pie de la pantalla */
+        function mostrarToastRapido(html, ms) {
+            let t = document.getElementById('toast-rapido');
+            if (!t) {
+                t = document.createElement('div');
+                t.id = 'toast-rapido';
+                document.body.appendChild(t);
+            }
+            t.innerHTML = `<span>${html}</span><button onclick="cancelarPendientesRapidos()" title="Cerrar">✕</button>`;
+            t.style.display = 'flex';
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(ocultarToastRapido, ms || 8000);
+        }
+
+        function ocultarToastRapido() {                 // al caducar el aviso caducan también las acciones pendientes
+            const t = document.getElementById('toast-rapido');
+            if (t) t.style.display = 'none';
+            const habiaCambio = cambioPendienteId !== null;
+            ubicPendiente = null;
+            cambioPendienteId = null;
+            if (habiaCambio) renderRoster();
+        }
+
+        function cancelarPendientesRapidos() {
+            clearTimeout(toastTimer);
+            ocultarToastRapido();
+        }
+
+        function registrarRapido() {
+            const ahora = Date.now();
+            const clave = selectedPlayerId + '|' + selectedAction;
+            if (clave === ultimaClaveRapida && ahora - ultimaMarcaRapida < 700) return;   // evita el doble toque accidental
+            ultimaClaveRapida = clave;
+            ultimaMarcaRapida = ahora;
+            registerEvent();
+        }
+
+        /* --- Gol ahora, ubicación después --- */
+        function textoUbicacion(ev, conCampo) {
+            return `📍 ${escaparHTML(ev.accion)} de #${escaparHTML(ev.dorsal)} ${escaparHTML(ev.jugador)} (${escaparHTML(ev.tiempo)}). ` +
+                `Toca la <b>portería</b>${conCampo ? ' y/o el <b>campo</b>' : ''} para ubicarlo.`;
+        }
+
+        function iniciarUbicacionPendiente(ev) {
+            ubicPendiente = { id: ev.id, goal: false, court: ev.campoX !== '-' };
+            mostrarToastRapido(textoUbicacion(ev, ev.campoX === '-'), 20000);
+        }
+
+        function ubicarEventoExistente(id) {
+            const ev = eventsLog.find(e => e.id === id);
+            if (!ev) return;
+            cambioPendienteId = null;
+            ubicPendiente = { id: ev.id, goal: ev.golX !== '-' && ev.golX !== undefined, court: ev.campoX !== '-' && ev.campoX !== undefined };
+            mostrarToastRapido(textoUbicacion(ev, true), 15000);
+        }
+
+        function aplicarUbicacionPendiente(goal, court) {
+            const ev = ubicPendiente ? eventsLog.find(e => e.id === ubicPendiente.id) : null;
+            if (!ev) { ubicPendiente = null; return false; }
+            if (goal) {
+                ev.golX = goal.x; ev.golY = goal.y;
+                ev.zonaPorteriaEscrita = traducirZonaCoordsEspejo(goal.x, goal.y);
+                ubicPendiente.goal = true;
+            }
+            if (court) {
+                ev.campoX = court.x; ev.campoY = court.y;
+                ev.zonaCampo = obtenerZonaTacticaCampo(court.x, court.y);
+                ubicPendiente.court = true;
+            }
+            const partes = [];
+            if (ubicPendiente.goal) partes.push('portería: ' + ev.zonaPorteriaEscrita);
+            if (ubicPendiente.court) partes.push('campo: ' + ev.zonaCampo);
+            const completo = ubicPendiente.goal && ubicPendiente.court;
+            const faltante = ubicPendiente.goal ? 'el campo' : 'la portería';
+            renderFeed();
+            if (typeof actualizarVistaMapaEx === 'function') actualizarVistaMapaEx();
+            if (completo) {
+                ubicPendiente = null;
+                mostrarToastRapido(`✓ Ubicado (${escaparHTML(partes.join(' · '))})`, 2500);
+            } else {
+                mostrarToastRapido(`✓ ${escaparHTML(partes.join(' · '))}. Puedes tocar también ${faltante} o seguir.`, 6000);
+            }
+            return true;
+        }
+
+        /* --- Cambios en un solo gesto: ⇄ del que sale y ⇄ del que entra --- */
+        function avisoCambioPendiente(p) {
+            mostrarToastRapido(`🔄 ${p.onField ? 'Sale' : 'Entra'} <b>#${escaparHTML(p.number)} ${escaparHTML(p.name)}</b>. ` +
+                `Toca ⇄ del jugador que ${p.onField ? 'ENTRA' : 'SALE'}, o ⇄ otra vez en el mismo para moverlo solo.`, 10000);
+        }
+
+        function gestionarCambioRapido(p) {
+            const A = cambioPendienteId !== null ? players.find(x => x.id === cambioPendienteId && !x.inactivo) : null;
+            if (!A) {
+                ubicPendiente = null;
+                cambioPendienteId = p.id;
+                renderRoster();
+                avisoCambioPendiente(p);
+                return;
+            }
+            if (A.id === p.id) {                                   // mismo jugador otra vez: movimiento individual
+                clearTimeout(toastTimer);
+                cambioPendienteId = null;
+                const t = document.getElementById('toast-rapido');
+                if (t) t.style.display = 'none';
+                alternarEstadoSimple(p);
+                return;
+            }
+            if (A.onField === p.onField) {                         // mismo grupo: cambia la selección
+                cambioPendienteId = p.id;
+                renderRoster();
+                avisoCambioPendiente(p);
+                return;
+            }
+            cambioPendienteId = null;
+            intercambiarJugadores(A, p);
+        }
+
+        /* Intercambia un jugador de pista con uno de banquillo (se registra solo si el partido ya está en marcha) */
+        function intercambiarJugadores(a, b) {
+            const sale = a.onField ? a : b, entra = a.onField ? b : a;
+            sale.onField = false;
+            entra.onField = true;
+            if (timerInterval !== null || seconds > 0) {
+                const cid = 'cb_' + Date.now();
+                crearEvento({ lado: 'home', categoria: 'CAMBIO', tipo: 'CAMBIO', accion: 'Sale a banquillo', dorsal: sale.number, jugadorId: sale.id, jugador: sale.name, cambioId: cid });
+                crearEvento({ lado: 'home', categoria: 'CAMBIO', tipo: 'CAMBIO', accion: 'Entra a pista', dorsal: entra.number, jugadorId: entra.id, jugador: entra.name, cambioId: cid });
+                renderFeed();
+            }
+            mostrarToastRapido(`✓ Cambio: sale #${escaparHTML(sale.number)} · entra #${escaparHTML(entra.number)}`, 2500);
+            renderRoster();
+        }
+
+        /* =====================================================================
+           ARRASTRAR TARJETAS ENTRE PISTA Y BANQUILLO (ratón y táctil)
+           - Soltar sobre una tarjeta del otro grupo  -> intercambio (sale uno, entra el otro)
+           - Soltar en la zona En pista / Banquillo    -> mueve solo a ese jugador
+           - Con el dedo: mantén pulsada la tarjeta un instante y arrastra (así no estorba al desplazamiento)
+           ===================================================================== */
+        let arrastre = null;
+        let ultimoArrastre = 0;
+        const UMBRAL_ARRASTRE = 6, ESPERA_PULSACION = 220;
+
+        function activarArrastreTarjetas() {
+            // Con la tarjeta "agarrada" se bloquea el scroll de la página
+            document.addEventListener('touchmove', e => {
+                if (arrastre && (arrastre.armado || arrastre.activo) && e.cancelable) e.preventDefault();
+            }, { passive: false });
+        }
+
+        function prepararArrastreTarjeta(card, p) {
+            card.addEventListener('pointerdown', e => {
+                if (e.pointerType === 'mouse' && e.button !== 0) return;
+                if (e.target && e.target.closest && e.target.closest('button, input, select')) return;     // no interferir con los controles de la tarjeta
+                iniciarPosibleArrastre(e, card, p);
+            });
+            card.addEventListener('contextmenu', e => { if (arrastre && arrastre.armado) e.preventDefault(); });
+        }
+
+        function iniciarPosibleArrastre(e, card, p) {
+            cancelarArrastre();
+            arrastre = { id: p.id, tarjeta: card, ghost: null, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, tipo: e.pointerType, armado: e.pointerType === 'mouse', activo: false, timer: null, dx: 0, dy: 0 };
+            if (!arrastre.armado) {           // táctil / lápiz: pulsación larga para "agarrar"
+                arrastre.timer = setTimeout(() => {
+                    if (!arrastre || arrastre.activo) return;
+                    arrastre.armado = true;
+                    arrastre.tarjeta.classList.add('arrastre-listo');
+                    if (navigator.vibrate) { try { navigator.vibrate(15); } catch (err) {} }
+                }, ESPERA_PULSACION);
+            }
+            document.addEventListener('pointermove', moverArrastre);
+            document.addEventListener('pointerup', soltarArrastre);
+            document.addEventListener('pointercancel', cancelarArrastre);
+        }
+
+        function moverArrastre(e) {
+            if (!arrastre) return;
+            arrastre.x = e.clientX; arrastre.y = e.clientY;
+            if (!arrastre.activo) {
+                const d = Math.hypot(e.clientX - arrastre.x0, e.clientY - arrastre.y0);
+                if (!arrastre.armado) { if (d > 10) cancelarArrastre(); return; }     // se movió antes de "agarrar": era un desplazamiento
+                if (d <= UMBRAL_ARRASTRE) return;
+                comenzarArrastre();
+            }
+            posicionarGhost();
+            resaltarDestinoArrastre();
+        }
+
+        function comenzarArrastre() {
+            arrastre.activo = true;
+            clearTimeout(arrastre.timer);
+            cambioPendienteId = null; ubicPendiente = null;
+            document.querySelectorAll('.swap-pendiente').forEach(n => n.classList.remove('swap-pendiente'));
+            const t = document.getElementById('toast-rapido');
+            if (t) t.style.display = 'none';
+
+            const r = arrastre.tarjeta.getBoundingClientRect();
+            const g = arrastre.tarjeta.cloneNode(true);
+            g.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+            g.classList.remove('arrastre-listo');
+            g.classList.add('arrastre-ghost');
+            g.style.width = r.width + 'px';
+            document.body.appendChild(g);
+            arrastre.ghost = g;
+            arrastre.dx = arrastre.x0 - r.left;
+            arrastre.dy = arrastre.y0 - r.top;
+            arrastre.tarjeta.classList.add('arrastrando');
+            document.body.classList.add('arrastrando-jugador');
+        }
+
+        function posicionarGhost() {
+            if (!arrastre || !arrastre.ghost) return;
+            arrastre.ghost.style.left = (arrastre.x - arrastre.dx) + 'px';
+            arrastre.ghost.style.top = (arrastre.y - arrastre.dy) + 'px';
+        }
+
+        /* Decide qué ocurriría al soltar sobre el elemento "el" (función pura, fácil de probar) */
+        function resolverDestinoArrastre(origenId, el) {
+            if (!el || !el.closest) return null;
+            const origen = players.find(x => x.id === origenId);
+            if (!origen) return null;
+            const tarjeta = el.closest('.player-card');
+            if (tarjeta) {
+                const otro = players.find(x => String(x.id) === tarjeta.getAttribute('data-pid'));
+                if (otro && otro.id !== origenId && otro.onField !== origen.onField) return { tipo: 'swap', otroId: otro.id, elemento: tarjeta };
+            }
+            let zona = el.closest('#roster-field, #roster-bench');
+            if (!zona) {
+                const cab = el.closest('.sub-header');                       // soltar sobre el título "EN PISTA" / "BANQUILLO" también vale
+                const sig = cab ? cab.nextElementSibling : null;
+                if (sig && (sig.id === 'roster-field' || sig.id === 'roster-bench')) zona = sig;
+            }
+            if (zona) {
+                const haciaPista = zona.id === 'roster-field';
+                if (haciaPista !== origen.onField) return { tipo: 'zona', onField: haciaPista, elemento: zona };
+            }
+            return null;
+        }
+
+        function resaltarDestinoArrastre() {
+            document.querySelectorAll('.drop-destino').forEach(n => n.classList.remove('drop-destino'));
+            if (!arrastre) return;
+            const dest = resolverDestinoArrastre(arrastre.id, document.elementFromPoint(arrastre.x, arrastre.y));
+            if (dest && dest.elemento) dest.elemento.classList.add('drop-destino');
+        }
+
+        function ejecutarMovimientoArrastre(id, dest) {
+            const p = players.find(x => x.id === id);
+            if (!p || !dest) return;
+            if (dest.tipo === 'swap') {
+                const otro = players.find(x => x.id === dest.otroId);
+                if (otro && otro.onField !== p.onField) intercambiarJugadores(p, otro);
+            } else if (dest.onField !== p.onField) {
+                alternarEstadoSimple(p);
+                mostrarToastRapido(`✓ #${escaparHTML(p.number)} ${escaparHTML(p.name)} ${p.onField ? 'entra a pista' : 'sale a banquillo'}`, 2000);
+            }
+        }
+
+        function soltarArrastre(e) {
+            if (!arrastre) return;
+            const activo = arrastre.activo, id = arrastre.id;
+            const dest = activo ? resolverDestinoArrastre(id, document.elementFromPoint(e.clientX, e.clientY)) : null;
+            cancelarArrastre();
+            if (activo) {                                  // un simple toque (sin arrastrar) sigue seleccionando al jugador
+                ultimoArrastre = Date.now();
+                if (dest) ejecutarMovimientoArrastre(id, dest);
+            }
+        }
+
+        function cancelarArrastre() {
+            if (!arrastre) return;
+            clearTimeout(arrastre.timer);
+            if (arrastre.ghost) arrastre.ghost.remove();
+            if (arrastre.tarjeta) { arrastre.tarjeta.classList.remove('arrastrando'); arrastre.tarjeta.classList.remove('arrastre-listo'); }
+            document.body.classList.remove('arrastrando-jugador');
+            document.querySelectorAll('.drop-destino').forEach(n => n.classList.remove('drop-destino'));
+            document.removeEventListener('pointermove', moverArrastre);
+            document.removeEventListener('pointerup', soltarArrastre);
+            document.removeEventListener('pointercancel', cancelarArrastre);
+            arrastre = null;
+        }
+
+        /* --- Deshacer lo último (acción, gol o cambio) --- */
+        function deshacerUltimo() {
+            if (eventsLog.length === 0) { mostrarToastRapido('No hay nada que deshacer.', 1800); return; }
+            clearTimeout(toastTimer);
+            ubicPendiente = null;
+            cambioPendienteId = null;
+            if (eventsLog[0].autoCierre && eventsLog[1]) {      // el cierre automático se deshace junto con su gol/fallo: el ataque vuelve a estar en curso
+                const fin = eventsLog.shift();
+                ataqueEnCurso = true;
+                ataqueParticipantes = (fin.participantes || []).slice();
+                ataqueNumero = Number(fin.ataqueNum) || ataqueNumero;
+                ataqueInicioSeg = Number(fin.inicioAtaque) || 0;
+                pintarEstadoAtaque();
+            }
+            const ev = eventsLog[0];
+            if (ev.tipo === 'CAMBIO') {
+                const grupo = ev.cambioId ? eventsLog.filter(e => e.cambioId === ev.cambioId) : [ev];
+                grupo.forEach(e => {
+                    const jug = players.find(x => x.id === e.jugadorId);
+                    if (jug && !jug.inactivo) jug.onField = (e.accion === 'Sale a banquillo');   // se devuelve cada uno a su sitio (salvo los ya quitados de la plantilla)
+                });
+                eventsLog = eventsLog.filter(e => !grupo.includes(e));
+                renderFeed();
+                renderRoster();
+                mostrarToastRapido('↩ Cambio deshecho.', 2000);
+                return;
+            }
+            const nombre = ev.accion;
+            eliminarEvento(ev.id);
+            renderRoster();
+            mostrarToastRapido(`↩ Deshecho: ${escaparHTML(nombre)}`, 2000);
         }
 
         /* =====================================================================
@@ -1432,22 +2217,24 @@
             }
         }
 
-        function registrarInicioAtaque() {
+        function registrarInicioAtaque(auto) {
             ataqueEnCurso = !ataqueEnCurso;
             pintarEstadoAtaque();
 
             if (ataqueEnCurso) {
                 ataqueNumero++;
                 ataqueInicioSeg = seconds;
+                ataqueParticipantes = [];
                 players.forEach(p => {
-                    if (p.onField) p.attacksCount = (p.attacksCount || 0) + 1;
+                    if (p.onField && !((p.exclusionSeconds || 0) > 0)) { p.attacksCount = (p.attacksCount || 0) + 1; ataqueParticipantes.push(p.id); }
                 });
                 renderRoster();
             } else {
                 crearEvento({
                     lado: 'home', categoria: 'ATAQUE', tipo: 'FIN_ATAQUE', accion: 'Fin Ataque',
                     dorsal: '-', jugador: 'Equipo (Pista)',
-                    ataqueNum: ataqueNumero, inicioAtaque: ataqueInicioSeg, duracionAtaque: Math.max(0, seconds - ataqueInicioSeg)
+                    ataqueNum: ataqueNumero, inicioAtaque: ataqueInicioSeg, duracionAtaque: Math.max(0, seconds - ataqueInicioSeg),
+                    participantes: ataqueParticipantes.slice(), autoCierre: auto === true
                 });
                 renderFeed();
             }
@@ -1458,16 +2245,22 @@
            ===================================================================== */
         function handleCourtClick(e) {
             const rect = e.currentTarget.getBoundingClientRect();
-            courtCoords.x = Math.round(((e.clientX - rect.left) / rect.width) * 300);
-            courtCoords.y = Math.round(((e.clientY - rect.top) / rect.height) * 200);
+            const cx = Math.round(((e.clientX - rect.left) / rect.width) * 300);
+            const cy = Math.round(((e.clientY - rect.top) / rect.height) * 200);
+            if (ubicPendiente && aplicarUbicacionPendiente(null, { x: cx, y: cy })) return;
+            courtCoords.x = cx;
+            courtCoords.y = cy;
             document.getElementById('court-marker').setAttribute('cx', courtCoords.x);
             document.getElementById('court-marker').setAttribute('cy', courtCoords.y);
         }
 
         function handleGoalClick(e) {
             const rect = e.currentTarget.getBoundingClientRect();
-            goalCoords.x = Math.round(((e.clientX - rect.left) / rect.width) * 300);
-            goalCoords.y = Math.round(((e.clientY - rect.top) / rect.height) * 200);
+            const gx = Math.round(((e.clientX - rect.left) / rect.width) * 300);
+            const gy = Math.round(((e.clientY - rect.top) / rect.height) * 200);
+            if (ubicPendiente && aplicarUbicacionPendiente({ x: gx, y: gy }, null)) return;
+            goalCoords.x = gx;
+            goalCoords.y = gy;
             document.getElementById('goal-marker').setAttribute('cx', goalCoords.x);
             document.getElementById('goal-marker').setAttribute('cy', goalCoords.y);
         }
@@ -1484,9 +2277,10 @@
             const p = players.find(x => x.id === selectedPlayerId);
             if (!p) return alert('Selecciona un jugador');
             const categoriaActiva = actions.find(a => a.name === selectedAction)?.category || 'attack';
-            const tipo = clasificarAccion(selectedAction);
+            const tipo = tipoDeAccion(selectedAction);
 
             if (tipo === 'GOL') homeGoals++;
+            if (tipo === 'EXCLUSION') p.exclusionSeconds = 120;       // 2 minutos fuera, con cuenta atrás
             actualizarMarcador();
 
             // Ahora se guarda la ubicación en portería para CUALQUIER acción en la que se haya marcado (antes solo en goles)
@@ -1500,7 +2294,7 @@
                 zonaCampo = obtenerZonaTacticaCampo(cX, cY);
             }
 
-            crearEvento({
+            const ev = crearEvento({
                 lado: 'home', categoria: categoriaActiva.toUpperCase(), tipo,
                 accion: selectedAction, dorsal: p.number, jugadorId: p.id, jugador: p.name,
                 zonaPorteriaEscrita: zonaPorteria, golX: gX, golY: gY,
@@ -1509,9 +2303,22 @@
 
             reiniciarMarcadoresClic();
             renderFeed();
+            if (tipo === 'EXCLUSION') { renderRoster(); avisarTerceraExclusion(p); }
+            // Un gol o un fallo propio cierran el ataque en curso (si no, la eficacia de ataque no cuadra)
+            if (ataqueEnCurso && (tipo === 'GOL' || tipo === 'FALLO')) registrarInicioAtaque(true);
+
+            if (modoRapido) {
+                if ((tipo === 'GOL' || tipo === 'FALLO') && gX === '-') iniciarUbicacionPendiente(ev);
+                else { ubicPendiente = null; mostrarToastRapido(`✓ ${escaparHTML(ev.accion)} · #${escaparHTML(ev.dorsal)} ${escaparHTML(ev.jugador)}`, 1800); }
+            }
+            return ev;
         }
 
-        function abrirModalGolRival() { document.getElementById('modal-gol-rival').classList.add('active'); }
+        function abrirModalGolRival() {
+            const aviso = document.getElementById('gol-rival-en-pista');
+            if (aviso) aviso.innerText = '🤾 En pista ahora: ' + textoPistaActual();
+            document.getElementById('modal-gol-rival').classList.add('active');
+        }
         function cerrarModalGolRival() { document.getElementById('modal-gol-rival').classList.remove('active'); }
 
         function guardarGolRivalConZona(zonaTexto) {
@@ -1537,15 +2344,40 @@
         }
 
         function traducirZonaCoordsEspejo(x, y) {
-            const col = x < 106 ? 'Derecha' : x < 193 ? 'Centro' : 'Izquierda';
-            const row = y < 84 ? 'Superior' : y < 142 ? 'Media' : 'Inferior';
+            x = Math.min(280, Math.max(20, x)); y = Math.min(200, Math.max(20, y));      // un clic fuera del marco cuenta en la zona más cercana
+            const col = x < 106.67 ? 'Derecha' : x < 193.33 ? 'Centro' : 'Izquierda';
+            const row = y < 80 ? 'Superior' : y < 140 ? 'Media' : 'Inferior';
             return `${row} ${col}`;
+        }
+
+        /* Tras borrar un evento, el marcador "en ese momento" de todos los demás se recalcula desde cero */
+        function recalcularMarcadorEventos() {
+            let l = 0, r = 0;
+            eventsLog.slice().reverse().forEach(e => {
+                if (e.tipo === 'AJUSTE') { l = Number(e.ajusteLocal) || 0; r = Number(e.ajusteRival) || 0; }
+                else { if (e.tipo === 'GOL' && e.lado === 'home') l++; if (e.tipo === 'GOL_ENCAJADO') r++; }
+                e.golesLocal = l; e.golesRival = r;
+                e.marcador = `${String(l).padStart(2, '0')} - ${String(r).padStart(2, '0')}`;
+            });
         }
 
         function eliminarEvento(id) {
             const index = eventsLog.findIndex(e => e.id === id);
             if (index === -1) return;
             const ev = eventsLog[index];
+
+            if (ev.tipo === 'CAMBIO') {              // un cambio rápido son dos eventos enlazados: se borran juntos y cada jugador vuelve a su sitio
+                const grupo = ev.cambioId ? eventsLog.filter(e => e.cambioId === ev.cambioId) : [ev];
+                grupo.forEach(e => {
+                    const jug = players.find(x => x.id === e.jugadorId);
+                    if (jug && !jug.inactivo && jug.onField === (e.accion === 'Entra a pista')) jug.onField = !jug.onField;
+                });
+                eventsLog = eventsLog.filter(e => !grupo.includes(e));
+                recalcularMarcadorEventos();
+                renderFeed();
+                renderRoster();
+                return;
+            }
 
             if (ev.tipo === 'GOL' && ev.lado === 'home') {
                 if (homeGoals > 0) homeGoals--;
@@ -1559,6 +2391,15 @@
                         tirosEx.splice(i, 1);
                     }
                 }
+            } else if (ev.tipo === 'FIN_ATAQUE') {
+                (ev.participantes || []).forEach(id => { const q = players.find(x => x.id === id); if (q && (q.attacksCount || 0) > 0) q.attacksCount--; });
+                renderRoster();
+            } else if (ev.tipo === 'AJUSTE') {
+                homeGoals = Math.max(0, homeGoals - ((ev.ajusteLocal || 0) - (ev.prevLocal || 0)));
+                awayGoals = Math.max(0, awayGoals - ((ev.ajusteRival || 0) - (ev.prevRival || 0)));
+            } else if (ev.tipo === 'CAMBIO_PARTE') {
+                parte = ev.parteAnterior || 1;
+                pintarParte();
             } else if (ev.tipo === 'EXCLUSION') {
                 const p = players.find(x => x.id === ev.jugadorId);
                 if (p && (p.exclusionSeconds || 0) > 0) { p.exclusionSeconds = 0; renderRoster(); }
@@ -1570,6 +2411,7 @@
             actualizarMarcador();
 
             eventsLog.splice(index, 1);
+            recalcularMarcadorEventos();
             renderFeed();
             if (typeof actualizarVistaMapaEx === 'function') actualizarVistaMapaEx();
         }
@@ -1577,20 +2419,37 @@
         function renderFeed() {
             const feed = document.getElementById('event-feed');
             feed.innerHTML = '';
-            eventsLog.forEach((e) => {
+            for (let i = 0; i < eventsLog.length; i++) {
+                const e = eventsLog[i];
                 const card = document.createElement('div');
                 const lado = e.lado || 'home';
                 let cardClass = lado === 'away' ? 'rival' : 'goal';
                 if (e.tipo === 'TIEMPO_MUERTO') cardClass = 'timeout';
-                else if (e.tipo === 'CAMBIO') cardClass = '';
+                else if (e.tipo === 'CAMBIO' || e.tipo === 'AJUSTE' || e.tipo === 'CAMBIO_PARTE') cardClass = '';
+
+                let titulo = `[${escaparHTML(nombreEquipoPorLado(lado))}] ${escaparHTML(e.accion)}`;
+                let detalle = `(${escaparHTML(e.jugador)})`;
+                const sig = eventsLog[i + 1];
+                if (e.cambioId && sig && sig.cambioId === e.cambioId) {      // par entra/sale = una sola tarjeta
+                    const entra = e.accion === 'Entra a pista' ? e : sig;
+                    const sale = entra === e ? sig : e;
+                    titulo = `[${escaparHTML(nombreEquipoPorLado(lado))}] 🔄 Cambio`;
+                    detalle = `(⬆ #${escaparHTML(entra.dorsal)} ${escaparHTML(entra.jugador)} · ⬇ #${escaparHTML(sale.dorsal)} ${escaparHTML(sale.jugador)})`;
+                    i++;
+                }
+                const sinUbicar = lado === 'home' && (e.tipo === 'GOL' || e.tipo === 'FALLO') && (e.zonaPorteriaEscrita === '-' || e.zonaPorteriaEscrita === undefined);
+                const btnUbicar = sinUbicar ? `<button class="event-loc-btn" onclick="ubicarEventoExistente(${Number(e.id)})">📍 Ubicar</button>` : '';
+
+                const pistaTxt = (e.tipo === 'GOL' || e.tipo === 'GOL_ENCAJADO') ? textoPistaCorto(e) : '';
+                const lineaPista = pistaTxt ? `<div style="font-size: 0.66rem; color:var(--text-muted); margin-top:1px;">🤾 En pista: ${escaparHTML(pistaTxt)}</div>` : '';
 
                 card.className = `event-card ${cardClass}`;
                 card.innerHTML = `
-                    <div style="flex-grow: 1;"><strong>[${escaparHTML(nombreEquipoPorLado(lado))}] ${escaparHTML(e.accion)}</strong> (${escaparHTML(e.jugador)}) <span style="color: var(--text-muted); font-size: 0.6rem;">${escaparHTML(e.tiempo)}</span></div>
-                    <button class="event-delete-btn" onclick="eliminarEvento(${Number(e.id)})">🗑 Borrar</button>
+                    <div style="flex-grow: 1;"><strong>${titulo}</strong> ${detalle} <span style="color: var(--text-muted); font-size: 0.66rem;">${escaparHTML(e.tiempo)}</span>${lineaPista}</div>
+                    ${btnUbicar}<button class="event-delete-btn" onclick="eliminarEvento(${Number(e.id)})">🗑 Borrar</button>
                 `;
                 feed.appendChild(card);
-            });
+            }
             autoguardarPartido();
         }
 
@@ -1698,18 +2557,32 @@
            CARGA DE UN PARTIDO (carpeta o autoguardado)
            ===================================================================== */
         function aplicarDatosPartido(data) {
-            homeName = data.homeName || 'SAR';
-            awayName = data.awayName || 'RIVAL';
-            homeGoals = data.homeGoals || 0;
-            awayGoals = data.awayGoals || 0;
-            seconds = data.seconds || 0;
-            eventsLog = (data.eventsLog || []).map(e => ({ ...e }));
-            if (Array.isArray(data.players)) players = normalizarJugadores(data.players);
-            timeoutsHome = data.timeoutsHome !== undefined ? data.timeoutsHome : MAX_TIEMPOS_MUERTOS;
-            timeoutsAway = data.timeoutsAway !== undefined ? data.timeoutsAway : MAX_TIEMPOS_MUERTOS;
+            if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }      // al cargar otro partido el reloj no sigue corriendo
+            parte = [1, 2, 3].includes(Number(data.parte)) ? Number(data.parte) : 1;
+            homeName = String(data.homeName || 'SAR').slice(0, 40);
+            awayName = String(data.awayName || 'RIVAL').slice(0, 40);
+            homeGoals = Math.max(0, Number(data.homeGoals) || 0);
+            awayGoals = Math.max(0, Number(data.awayGoals) || 0);
+            seconds = Math.max(0, Number(data.seconds) || 0);
+            const tablaPistas = Array.isArray(data.pistasTabla) ? data.pistasTabla : [];
+            eventsLog = (Array.isArray(data.eventsLog) ? data.eventsLog : [])
+                .filter(e => e && typeof e === 'object' && Number.isFinite(Number(e.id)))
+                .map(e => {
+                    const c = { ...e, id: Number(e.id) };
+                    if (c.enPistaRef !== undefined) { if (Array.isArray(tablaPistas[c.enPistaRef])) c.enPistaDetalle = tablaPistas[c.enPistaRef]; delete c.enPistaRef; }
+                    return c;
+                });
+            if (Array.isArray(data.players)) players = normalizarJugadores(data.players, true);
+            if (Array.isArray(data.posiciones) && data.posiciones.length > 0) posiciones = sanearPosiciones(data.posiciones);
+            if (Number(data.maxTM) >= 1 && Number(data.maxTM) <= 10) MAX_TIEMPOS_MUERTOS = Number(data.maxTM);
+            timeoutsHome = data.timeoutsHome !== undefined ? Math.min(MAX_TIEMPOS_MUERTOS, Math.max(0, Number(data.timeoutsHome) || 0)) : MAX_TIEMPOS_MUERTOS;
+            timeoutsAway = data.timeoutsAway !== undefined ? Math.min(MAX_TIEMPOS_MUERTOS, Math.max(0, Number(data.timeoutsAway) || 0)) : MAX_TIEMPOS_MUERTOS;
 
             limpiarTirosMapa();
-            const lista = (data.tirosEx || []).map(t => ({ ...t }));
+            const lista = (Array.isArray(data.tirosEx) ? data.tirosEx : [])
+                .filter(t => t && Number.isFinite(Number(t.x)) && Number.isFinite(Number(t.y)))
+                .map(t => ({ ...t, x: Number(t.x), y: Number(t.y), equipo: t.equipo === 'RIVAL' ? 'RIVAL' : 'SAR',
+                    resultado: ['gol', 'paradon', 'fuera'].includes(t.resultado) ? t.resultado : 'fuera', eventId: t.eventId ? Number(t.eventId) : null }));
             if (data.coordVersion !== COORD_VERSION) convertirCoordMapaLegacy(lista, eventsLog);
             eventsLog.forEach(normalizarEvento);
             lista.forEach(t => crearMarcadorMapa(t));
@@ -1726,6 +2599,7 @@
             actualizarMarcador();
             actualizarDisplayTiempo();
             actualizarTimeoutsUI();
+            pintarParte();
             renderFeed();
             renderRoster();
             if (typeof actualizarVistaMapaEx === 'function') actualizarVistaMapaEx();
@@ -1734,19 +2608,67 @@
         /* =====================================================================
            AUTOGUARDADO DEL PARTIDO EN CURSO
            ===================================================================== */
-        function autoguardarPartido() {
-            ultimoAutoguardado = seconds;
+        let _agTimer = null;
+        function guardarPartidoAhora() {
             if (eventsLog.length === 0 && seconds === 0) return;
             escribirJSON(CLAVE_AUTOGUARDADO, datosPartidoActuales());
         }
 
+        /* Guardado con retardo (agrupa varios cambios seguidos); con forzar=true se escribe al instante */
+        function autoguardarPartido(forzar) {
+            ultimoAutoguardado = seconds;
+            if (eventsLog.length === 0 && seconds === 0) return;
+            if (forzar === true) { clearTimeout(_agTimer); _agTimer = null; guardarPartidoAhora(); return; }
+            if (_agTimer) return;
+            _agTimer = setTimeout(() => { _agTimer = null; guardarPartidoAhora(); }, 800);
+        }
+
+        function volcarPendientes() {
+            if (_cfgTimer) { clearTimeout(_cfgTimer); _cfgTimer = null; guardarConfigLocalYa(); }
+            autoguardarPartido(true);
+        }
+        window.addEventListener('pagehide', volcarPendientes);
+        document.addEventListener('visibilitychange', () => { if (document.hidden) volcarPendientes(); });
+
+        function exportarPartidoJSON() {
+            const d = new Date(), pad = n => String(n).padStart(2, '0');
+            const fecha = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
+            const limpio = s => String(s).replace(/[^\wÀ-ÿ-]+/g, '_');
+            descargarBlob(new Blob([JSON.stringify(datosPartidoActuales())], { type: 'application/json' }), `Partido_${limpio(homeName)}_vs_${limpio(awayName)}_${fecha}.json`);
+        }
+
+        function importarPartidoJSON() {
+            if ((eventsLog.length > 0 || seconds > 0) && !confirm('Hay un partido en curso. Si importas otro se sustituirá. ¿Continuar?')) return;
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json,application/json';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = ev => {
+                    try {
+                        const datos = JSON.parse(ev.target.result);
+                        if (!datos || typeof datos !== 'object' || !Array.isArray(datos.eventsLog)) throw new Error('formato');
+                        aplicarDatosPartido(datos);
+                        autoguardarPartido(true);
+                        alert('¡Partido importado correctamente!');
+                    } catch (err) { alert('El archivo no es un partido válido.'); }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
         function recuperarPartidoAutoguardado() {
             const d = leerJSON(CLAVE_AUTOGUARDADO, null);
-            if (!d || !((d.eventsLog && d.eventsLog.length) || d.seconds > 0)) return;
+            if (!d || !((d.eventsLog && d.eventsLog.length) || d.seconds > 0)) return false;
             const resumen = `${d.homeName || 'SAR'} ${d.homeGoals || 0} - ${d.awayGoals || 0} ${d.awayName || 'RIVAL'} (${formatearSegundos(d.seconds || 0)})`;
             if (confirm(`Se encontró un partido en curso sin cerrar:\n${resumen}\n\n¿Quieres recuperarlo?`)) {
                 aplicarDatosPartido(d);
+                return true;
             }
+            return false;
         }
 
         /* =====================================================================
@@ -1763,13 +2685,16 @@
         }
 
         function calcularEstadisticas() {
+            const propios = eventsLog.filter(e => e.lado === 'home');
             const ataques = eventsLog.filter(e => e.tipo === 'FIN_ATAQUE').length;
-            const goles = eventsLog.filter(e => e.lado === 'home' && e.tipo === 'GOL').length;
-            const asistencias = eventsLog.filter(e => e.lado === 'home' && e.tipo === 'ASISTENCIA').length;
-            const fallos = eventsLog.filter(e => e.lado === 'home' && e.tipo === 'FALLO').length;
+            const goles = propios.filter(e => e.tipo === 'GOL').length;
+            const asistencias = propios.filter(e => e.tipo === 'ASISTENCIA').length;
+            const fallos = propios.filter(e => e.tipo === 'FALLO').length;
+            const paradasPortero = propios.filter(e => e.tipo === 'PARADA_PORTERO').length;
             const encajados = eventsLog.filter(e => e.tipo === 'GOL_ENCAJADO').length;
-            const efectividad = ataques > 0 ? Math.min(1, goles / ataques) : 0;
-            return { ataques, goles, asistencias, fallos, encajados, efectividad };
+            const efectividad = ataques > 0 ? goles / ataques : 0;                       // sin tope: >100 % delata ataques sin registrar
+            const eficLanzamiento = (goles + fallos) > 0 ? goles / (goles + fallos) : 0;
+            return { ataques, goles, asistencias, fallos, encajados, efectividad, eficLanzamiento, paradasPortero };
         }
 
         function contarZonasPorteria(tipoEvento, lado) {
@@ -1812,10 +2737,30 @@
             document.getElementById('stat-total-asistencias').innerText = st.asistencias;
             document.getElementById('stat-total-tiros-fuera').innerText = st.fallos;
             document.getElementById('stat-goles-encajados').innerText = st.encajados;
-            document.getElementById('stat-efectividad').innerText = Math.round(st.efectividad * 100) + '%';
+            document.getElementById('stat-efectividad').innerText = Math.round(st.efectividad * 100) + '%' + (st.goles > st.ataques ? ' ⚠' : '');
+            document.getElementById('stat-efic-lanzamiento').innerText = Math.round(st.eficLanzamiento * 100) + '%';
+            document.getElementById('stat-paradas-portero').innerText = st.paradasPortero;
 
             pintarGraficoZonas('chart-goles-favor-container', contarZonasPorteria('GOL', 'home'), 'green', 'Sin goles a favor con ubicación todavía.');
             pintarGraficoZonas('chart-goles-contra-container', contarZonasPorteria('GOL_ENCAJADO', 'away'), 'red', 'Sin goles en contra con ubicación todavía.');
+            pintarImpactoPista();
+        }
+
+        function pintarImpactoPista() {
+            const cont = document.getElementById('impacto-pista-container');
+            if (!cont) return;
+            const imp = calcularImpactoPista();
+            const filas = players.filter(pl => imp[pl.id] && (imp[pl.id].gf > 0 || imp[pl.id].gc > 0));
+            if (filas.length === 0) { cont.innerHTML = '<span style="color:var(--text-muted); font-size:0.7rem;">Sin goles todavía.</span>'; return; }
+            let html = '';
+            filas.forEach(pl => {
+                const r = imp[pl.id], dif = r.gf - r.gc;
+                const color = dif > 0 ? 'var(--accent-green)' : dif < 0 ? 'var(--accent-red)' : 'var(--text-muted)';
+                html += `<div class="chart-bar-row" style="justify-content:space-between;">
+                    <span class="chart-bar-label" style="min-width:0;">#${escaparHTML(pl.number)} ${escaparHTML(pl.name)}${pl.posicion ? ' (' + escaparHTML(abrevPosicion(pl.posicion)) + ')' : ''}</span>
+                    <span style="white-space:nowrap;">A favor <b>${r.gf}</b> · En contra <b>${r.gc}</b> · <b style="color:${color};">${dif > 0 ? '+' : ''}${dif}</b></span></div>`;
+            });
+            cont.innerHTML = html;
         }
 
         function poblarSelectorJugadoresAnalisis() {
@@ -1825,7 +2770,7 @@
             players.forEach(p => {
                 const opt = document.createElement('option');
                 opt.value = String(p.id);          // se identifica por ID, no por nombre (los nombres pueden repetirse o editarse)
-                opt.innerText = `#${p.number} - ${p.name}`;
+                opt.innerText = `#${p.number} - ${p.name}${p.inactivo ? ' (inactivo)' : ''}`;
                 select.appendChild(opt);
             });
             if (previo && players.some(p => String(p.id) === previo)) select.value = previo;
@@ -1834,7 +2779,7 @@
 
         /* Eventos de un jugador (por ID; los eventos antiguos sin ID se asocian por nombre) */
         function eventosDeJugador(p) {
-            const ignorar = ['CAMBIO', 'FIN_ATAQUE', 'TIEMPO_MUERTO', 'TIRO_MAPA', 'GOL_ENCAJADO'];
+            const ignorar = ['CAMBIO', 'FIN_ATAQUE', 'TIEMPO_MUERTO', 'TIRO_MAPA', 'GOL_ENCAJADO', 'AJUSTE', 'CAMBIO_PARTE'];
             return eventsLog.filter(e => e.lado === 'home' && !ignorar.includes(e.tipo) &&
                 ((e.jugadorId != null && e.jugadorId === p.id) || (e.jugadorId == null && e.jugador === p.name)));
         }
@@ -2045,6 +2990,10 @@
             const siNo = b => b ? 'Sí' : 'No';
             const etq = id => { const el = document.getElementById(id); return el ? String(el.innerText) : id; };
             const cron = eventsLog.slice().reverse();                      // orden cronológico
+            const detallePista = e => {
+                const x = pistaEfectivaDeEvento(e);
+                return x ? x.map(q => `${q.pos ? q.pos + ' ' : ''}#${q.n} ${q.nm}`.trim()).join(' | ') : '';
+            };
             const hojas = [];
 
             // Nombres de todas las acciones (configuradas + registradas), para las columnas de acciones
@@ -2082,14 +3031,17 @@
                     ['Tiempos muertos usados (rival)', MAX_TIEMPOS_MUERTOS - timeoutsAway],
                     [N('PLANTILLA Y ESTADO DE LA PANTALLA'), ''],
                     ['Plantilla seleccionada', selPlantilla && selPlantilla.value ? selPlantilla.value : '(sin guardar)'],
-                    ['Jugadores en plantilla', players.length],
+                    ['Jugadores en plantilla', players.filter(p => !p.inactivo).length],
                     ['Jugadores en pista', players.filter(p => p.onField).length],
-                    ['Jugadores en banquillo', players.filter(p => !p.onField).length],
+                    ['Jugadores en banquillo', players.filter(p => !p.inactivo && !p.onField).length],
+                    ['Jugadores quitados a mitad de partido (inactivos)', players.filter(p => p.inactivo).length],
                     ['Jugadores excluidos ahora', players.filter(p => (p.exclusionSeconds || 0) > 0).length],
                     ['Jugador seleccionado', sel ? `#${sel.number} ${sel.name}` : ''],
                     ['Acción seleccionada', selectedAction],
                     ['Ataque en curso', siNo(ataqueEnCurso)],
                     ['Ataques iniciados', ataqueNumero],
+                    ['Modo rápido activado', siNo(modoRapido)],
+                    ['Parte actual', parte],
                     [N('ANALÍTICA'), ''],
                     [etq('lbl-stat-ataques'), st.ataques],
                     [etq('lbl-stat-goles'), st.goles],
@@ -2097,6 +3049,8 @@
                     [etq('lbl-stat-fallos'), st.fallos],
                     [etq('lbl-stat-contra'), st.encajados],
                     [etq('lbl-stat-efec'), P(st.efectividad)],
+                    [etq('lbl-stat-efic-lanz'), P(st.eficLanzamiento)],
+                    [etq('lbl-stat-paradas'), st.paradasPortero],
                     [N('MAPA DE TIROS'), ''],
                     ['Tiros en el mapa (local)', tirosMapaEquipo('home').length],
                     ['Tiros en el mapa (rival)', tirosMapaEquipo('away').length],
@@ -2105,7 +3059,7 @@
                     [N('REGISTRO'), ''],
                     ['Total de eventos registrados', eventsLog.length],
                     ['Fecha de exportación', new Date().toLocaleString()],
-                    ['Nota', 'Los tramos de 5 minutos usan el cronómetro: si se reinicia el reloj en el descanso, los tramos se solapan.']
+                    ['Nota', 'Los tramos de 5 minutos usan el cronómetro continuo; la columna Parte de la cronología indica 1ª parte, 2ª parte o prórroga.']
                 ]
             });
 
@@ -2122,6 +3076,8 @@
                 [etq('lbl-stat-fallos'), st.fallos],
                 [etq('lbl-stat-contra'), st.encajados],
                 [etq('lbl-stat-efec'), P(st.efectividad)],
+                    [etq('lbl-stat-efic-lanz'), P(st.eficLanzamiento)],
+                    [etq('lbl-stat-paradas'), st.paradasPortero],
                 []
             ];
             const bloqueZonas = (titulo, zonas) => {
@@ -2137,11 +3093,19 @@
             bloqueZonas(etq('txt-sec-goles-favor'), golesFavor);
             bloqueZonas(etq('txt-sec-goles-contra'), golesContra);
 
+            const impacto = calcularImpactoPista();
+            filasAn.push([N(etq('txt-sec-impacto-pista'))], [H('Dorsal'), H('Jugador'), H('Posicion'), H('Goles_A_Favor_En_Pista'), H('Goles_En_Contra_En_Pista'), H('Diferencia')]);
+            players.forEach(pl => {
+                const r = impacto[pl.id];
+                filasAn.push([num(pl.number), pl.name, pl.posicion || '', r.gf, r.gc, r.gf - r.gc]);
+            });
+            filasAn.push([]);
+
             filasAn.push([N(etq('txt-sec-desglose-jugador'))]);
-            filasAn.push([H('Dorsal'), H('Jugador'), H('Tiempo_En_Pista'), H('Ataques')].concat(nombresAccion.map(H), [H('Total_Acciones')]));
+            filasAn.push([H('Dorsal'), H('Jugador'), H('Posicion'), H('Tiempo_En_Pista'), H('Ataques')].concat(nombresAccion.map(H), [H('Total_Acciones')]));
             players.forEach(p => {
                 const ev = eventosDeJugador(p);
-                filasAn.push([num(p.number), p.name, formatearSegundos(p.totalSeconds), p.attacksCount || 0]
+                filasAn.push([num(p.number), p.name, p.posicion || '', formatearSegundos(p.totalSeconds), p.attacksCount || 0]
                     .concat(nombresAccion.map(n => ev.filter(e => e.accion === n).length), [ev.length]));
             });
             hojas.push({ nombre: 'Analitica', cabecera: false, filas: filasAn });
@@ -2184,7 +3148,7 @@
                 'Orden', 'ID_Evento', 'Segundo', 'Tiempo_mmss', 'Goles_Local', 'Goles_Rival', 'Dif_Local_menos_Rival', 'Lado', 'Equipo',
                 'Categoria', 'Tipo', 'Accion', 'Dorsal', 'ID_Jugador', 'Jugador', 'Zona_Porteria', 'Porteria_X', 'Porteria_Y',
                 'Zona_Campo', 'Campo_X', 'Campo_Y', 'Resultado_Tiro_Mapa', 'Ataque_N', 'Inicio_Ataque_Seg', 'Duracion_Ataque_Seg',
-                'Jugadores_En_Pista_Dorsales', 'N_En_Pista', 'Excluidos_Activos_Dorsales'
+                'Jugadores_En_Pista_Dorsales', 'N_En_Pista', 'Excluidos_Activos_Dorsales', 'ID_Cambio', 'Posicion_Jugador', 'Jugadores_En_Pista_Detalle', 'Parte'
             ]];
             cron.forEach((e, i) => {
                 const gl = num(e.golesLocal), gr = num(e.golesRival);
@@ -2195,7 +3159,7 @@
                     txt(e.zonaPorteriaEscrita), num(e.golX), num(e.golY),
                     txt(e.zonaCampo), num(e.campoX), num(e.campoY), txt(e.resultado),
                     num(e.ataqueNum), num(e.inicioAtaque), num(e.duracionAtaque),
-                    txt(e.enPista), num(e.numEnPista), txt(e.excluidos)
+                    txt(e.enPista), num(e.numEnPista), txt(e.excluidos), txt(e.cambioId), txt(e.posicionJugador), detallePista(e), txt(e.parte)
                 ]);
             });
             hojas.push({ nombre: 'Cronologia', cabecera: true, filas: filasCrono });
@@ -2250,9 +3214,10 @@
                7. JUGADORES
                --------------------------------------------------------------- */
             const filasJug = [[
-                'Dorsal', 'Jugador', 'ID_Jugador', 'Estado_Actual', 'Excluido_Ahora', 'Segundos_En_Pista', 'Minutos_En_Pista', 'Tiempo_En_Pista_mmss',
-                'Ataques_Participados', 'Segundos_Exclusion_Restantes', 'Goles', 'Asistencias', 'Fallos', 'Lanzamientos',
-                'Acierto_Lanzamiento', 'Exclusiones', 'Total_Acciones', 'Cambios_Entradas', 'Cambios_Salidas'
+                'Dorsal', 'Jugador', 'Posicion', 'ID_Jugador', 'Estado_Actual', 'Excluido_Ahora', 'Segundos_En_Pista', 'Minutos_En_Pista', 'Tiempo_En_Pista_mmss',
+                'Ataques_Participados', 'Segundos_Exclusion_Restantes', 'Segundos_Excluido', 'Goles', 'Asistencias', 'Fallos', 'Lanzamientos',
+                'Acierto_Lanzamiento', 'Exclusiones', 'Total_Acciones', 'Cambios_Entradas', 'Cambios_Salidas',
+                'Goles_A_Favor_En_Pista', 'Goles_En_Contra_En_Pista', 'Diferencia_En_Pista'
             ]];
             players.forEach(p => {
                 const ev = eventosDeJugador(p);
@@ -2260,35 +3225,36 @@
                 const goles = c('GOL'), fallos = c('FALLO');
                 const camb = cron.filter(e => e.tipo === 'CAMBIO' && e.jugadorId === p.id);
                 filasJug.push([
-                    num(p.number), p.name, String(p.id), p.onField ? 'En Pista' : 'Banquillo', siNo((p.exclusionSeconds || 0) > 0),
+                    num(p.number), p.name, p.posicion || '', String(p.id), p.inactivo ? 'Inactivo (quitado de la plantilla)' : (p.onField ? 'En Pista' : 'Banquillo'), siNo((p.exclusionSeconds || 0) > 0),
                     p.totalSeconds || 0, Math.round(((p.totalSeconds || 0) / 60) * 100) / 100, formatearSegundos(p.totalSeconds || 0),
-                    p.attacksCount || 0, p.exclusionSeconds || 0, goles, c('ASISTENCIA'), fallos, goles + fallos,
+                    p.attacksCount || 0, p.exclusionSeconds || 0, p.segundosExcluido || 0, goles, c('ASISTENCIA'), fallos, goles + fallos,
                     (goles + fallos) > 0 ? P(goles / (goles + fallos)) : '', c('EXCLUSION'), ev.length,
-                    camb.filter(e => e.accion === 'Entra a pista').length, camb.filter(e => e.accion === 'Sale a banquillo').length
+                    camb.filter(e => e.accion === 'Entra a pista').length, camb.filter(e => e.accion === 'Sale a banquillo').length,
+                    impacto[p.id].gf, impacto[p.id].gc, impacto[p.id].gf - impacto[p.id].gc
                 ]);
             });
             hojas.push({ nombre: 'Jugadores', cabecera: true, filas: filasJug });
 
             /* 8. JUGADOR x ACCIÓN */
-            const filasJA = [['Dorsal', 'Jugador'].concat(nombresAccion, ['Total'])];
+            const filasJA = [['Dorsal', 'Jugador', 'Posicion'].concat(nombresAccion, ['Total'])];
             const totales = nombresAccion.map(() => 0);
             players.forEach(p => {
                 const ev = eventosDeJugador(p);
-                const fila = [num(p.number), p.name];
+                const fila = [num(p.number), p.name, p.posicion || ''];
                 nombresAccion.forEach((n, k) => { const cnt = ev.filter(e => e.accion === n).length; totales[k] += cnt; fila.push(cnt); });
                 fila.push(ev.length);
                 filasJA.push(fila);
             });
-            filasJA.push([N('TOTAL'), ''].concat(totales, [totales.reduce((a, b) => a + b, 0)]));
+            filasJA.push([N('TOTAL'), '', ''].concat(totales, [totales.reduce((a, b) => a + b, 0)]));
             hojas.push({ nombre: 'Jugador_Accion', cabecera: true, filas: filasJA });
 
             /* 9. JUGADOR x ZONA (campo y portería) */
-            const filasJZ = [['Dorsal', 'Jugador', 'Tipo_Zona', 'Zona', 'Lanzamientos', 'Goles', 'Fallos', 'Eficacia']];
+            const filasJZ = [['Dorsal', 'Jugador', 'Posicion', 'Tipo_Zona', 'Zona', 'Lanzamientos', 'Goles', 'Fallos', 'Eficacia']];
             players.forEach(p => {
                 const lanz = eventosDeJugador(p).filter(e => e.tipo === 'GOL' || e.tipo === 'FALLO');
                 const fila = (tipoZona, zona, lista) => {
                     const g = lista.filter(e => e.tipo === 'GOL').length, f = lista.length - g;
-                    filasJZ.push([num(p.number), p.name, tipoZona, zona, lista.length, g, f, P(lista.length > 0 ? g / lista.length : 0)]);
+                    filasJZ.push([num(p.number), p.name, p.posicion || '', tipoZona, zona, lista.length, g, f, P(lista.length > 0 ? g / lista.length : 0)]);
                 };
                 ZONAS_TACTICAS.forEach(z => {
                     const l = lanz.filter(e => e.campoX !== '-' && e.campoX !== undefined && obtenerZonaTacticaCampo(Number(e.campoX), Number(e.campoY)) === z);
@@ -2299,8 +3265,52 @@
                     if (l.length) fila('Porteria', z, l);
                 });
             });
-            if (filasJZ.length === 1) filasJZ.push(['', 'Sin lanzamientos con ubicación todavía', '', '', '', '', '', '']);
+            if (filasJZ.length === 1) filasJZ.push(['', 'Sin lanzamientos con ubicación todavía', '', '', '', '', '', '', '']);
             hojas.push({ nombre: 'Jugador_Zonas', cabecera: true, filas: filasJZ });
+
+            /* 9b. GOLES_Y_PISTA: cada gol (a favor y en contra) con quién estaba en pista */
+            const filasGP = [[
+                'Orden', 'Segundo', 'Tiempo_mmss', 'Marcador_Tras_El_Gol', 'Tipo', 'Anotador', 'Posicion_Anotador', 'Zona_Porteria', 'Zona_Campo_Origen',
+                'Campo_X', 'Campo_Y', 'N_En_Pista', 'Jugadores_En_Pista_Detalle', 'Excluidos_Dorsales'
+            ].concat(players.map(pl => `#${pl.number} ${pl.name}${pl.posicion ? ' (' + abrevPosicion(pl.posicion) + ')' : ''}`))];
+            let ordenGol = 0;
+            cron.forEach(e => {
+                const favor = e.tipo === 'GOL' && e.lado === 'home', contra = e.tipo === 'GOL_ENCAJADO';
+                if (!favor && !contra) return;
+                ordenGol++;
+                const pista = pistaEfectivaDeEvento(e);
+                const exc = String(e.excluidos || '').split('-');
+                filasGP.push([
+                    ordenGol, num(e.segundos), e.tiempo, e.marcador, favor ? 'Gol a favor' : 'Gol encajado',
+                    favor ? txt(e.jugador) : '', favor ? txt(e.posicionJugador) : '',
+                    txt(e.zonaPorteriaEscrita), txt(e.zonaCampo), num(e.campoX), num(e.campoY),
+                    pista ? pista.length : '', detallePista(e), txt(e.excluidos)
+                ].concat(players.map(pl => {
+                    if (!pista) return '';
+                    if (pista.some(x => (x.id != null ? x.id === pl.id : x.n === pl.number))) return 'Sí';
+                    return exc.includes(String(pl.number)) ? 'Excl.' : '';
+                })));
+            });
+            if (filasGP.length === 1) filasGP.push(['', '', '', '', 'Sin goles todavía']);
+            hojas.push({ nombre: 'Goles_Y_Pista', cabecera: true, filas: filasGP });
+
+            /* 9c. POSICIONES: rendimiento por posición de juego */
+            const nombresPos = posiciones.map(x => x.n);
+            players.forEach(pl => { if (pl.posicion && !nombresPos.includes(pl.posicion)) nombresPos.push(pl.posicion); });
+            nombresPos.push('');
+            const filasPo = [['Posicion', 'Abreviatura', 'N_Jugadores', 'Jugadores', 'Segundos_En_Pista_Total', 'Goles', 'Asistencias', 'Fallos', 'Lanzamientos', 'Acierto_Lanzamiento']];
+            nombresPos.forEach(pn => {
+                const jug = players.filter(pl => (pl.posicion || '') === pn);
+                const ev = cron.filter(e => e.lado === 'home' && ['GOL', 'ASISTENCIA', 'FALLO'].includes(e.tipo) && (e.posicionJugador || (players.find(x => x.id === e.jugadorId) || {}).posicion || '') === pn);
+                const g = ev.filter(e => e.tipo === 'GOL').length, f = ev.filter(e => e.tipo === 'FALLO').length;
+                if (jug.length === 0 && ev.length === 0) return;
+                filasPo.push([
+                    pn || '(sin posición)', pn ? abrevPosicion(pn) : '', jug.length, jug.map(pl => `#${pl.number} ${pl.name}`).join(' | '),
+                    jug.reduce((a, pl) => a + (pl.totalSeconds || 0), 0), g, ev.filter(e => e.tipo === 'ASISTENCIA').length, f, g + f,
+                    (g + f) > 0 ? P(g / (g + f)) : ''
+                ]);
+            });
+            hojas.push({ nombre: 'Posiciones', cabecera: true, filas: filasPo });
 
             /* ---------------------------------------------------------------
                10. TIROS DEL MAPA (cada punto del mapa con su evento)
@@ -2354,13 +3364,13 @@
                --------------------------------------------------------------- */
             const filasAc = [['ID_Accion', 'Categoria', 'Nombre', 'Clasificacion', 'Veces_Registrada', 'Seleccionada_Ahora', 'Estado']];
             actions.forEach(a => filasAc.push([
-                a.id, a.category === 'defense' ? 'Defensa / Otros' : 'Ataque', a.name, clasificarAccion(a.name),
+                a.id, a.category === 'defense' ? 'Defensa / Otros' : 'Ataque', a.name, tipoDeAccion(a.name),
                 eventsLog.filter(e => e.lado === 'home' && e.accion === a.name).length, siNo(selectedAction === a.name), 'Configurada'
             ]));
             const configuradas = actions.map(a => a.name);
             const extras = [];
             eventsLog.forEach(e => {
-                if (e.lado === 'home' && !['CAMBIO', 'FIN_ATAQUE', 'TIEMPO_MUERTO', 'TIRO_MAPA'].includes(e.tipo) && !configuradas.includes(e.accion) && !extras.includes(e.accion)) extras.push(e.accion);
+                if (e.lado === 'home' && !['CAMBIO', 'FIN_ATAQUE', 'TIEMPO_MUERTO', 'TIRO_MAPA', 'AJUSTE', 'CAMBIO_PARTE'].includes(e.tipo) && !configuradas.includes(e.accion) && !extras.includes(e.accion)) extras.push(e.accion);
             });
             extras.forEach(n => filasAc.push(['', '', n, clasificarAccion(n), eventsLog.filter(e => e.lado === 'home' && e.accion === n).length, 'No', 'Registrada pero ya no está en la configuración']));
             hojas.push({ nombre: 'Acciones_Config', cabecera: true, filas: filasAc });
@@ -2381,6 +3391,8 @@
                 const el = document.getElementById(pickerId);
                 filasCf.push([variable, coloresPersonalizados[variable] || (el && el.value) || '']);
             });
+            filasCf.push([], [N('POSICIONES DE JUEGO')], [H('Posicion'), H('Abreviatura')]);
+            posiciones.forEach(x => filasCf.push([x.n, x.a]));
             filasCf.push([], [N('PLANTILLAS GUARDADAS')], [H('Nombre'), H('Jugadores')]);
             const plantillas = leerJSON('sar_equipos_guardados', {});
             Object.entries(plantillas).forEach(([k, v]) => filasCf.push([k, Array.isArray(v) ? v.length : '']));
@@ -2416,11 +3428,14 @@
                 eventsLog = []; homeGoals = 0; awayGoals = 0; seconds = 0;
                 timeoutsHome = MAX_TIEMPOS_MUERTOS; timeoutsAway = MAX_TIEMPOS_MUERTOS;
                 limpiarTirosMapa();
-                players.forEach(p => { p.totalSeconds = 0; p.attacksCount = 0; p.exclusionSeconds = 0; });
+                players = players.filter(p => !p.inactivo);
+                players.forEach(p => { p.totalSeconds = 0; p.attacksCount = 0; p.exclusionSeconds = 0; p.segundosExcluido = 0; });
                 if (timerInterval) rebasarCronometro();
                 ataqueEnCurso = false;
-                ataqueNumero = 0; ataqueInicioSeg = 0;
+                ataqueNumero = 0; ataqueInicioSeg = 0; ataqueParticipantes = [];
+                parte = 1; pintarParte();
                 pintarEstadoAtaque();
+                clearTimeout(_agTimer); _agTimer = null;
                 try { localStorage.removeItem(CLAVE_AUTOGUARDADO); } catch (e) {}
                 actualizarTimeoutsUI();
                 actualizarMarcador(); actualizarDisplayTiempo(); renderFeed(); renderRoster();
@@ -2433,19 +3448,23 @@
     <script>
         /* Zonas tácticas sobre coordenadas normalizadas (0-300 en X, 0-200 en Y), iguales para el minicampo y el mapa flotante */
         function obtenerZonaTacticaCampo(x, y) {
-            if (y < 90) {
-                if (x < 75) return 'Extremo Izquierdo (6m)';
-                if (x < 125) return 'Lateral Izquierdo (6m)';
-                if (x < 175) return 'Central / Pivote (6m)';
-                if (x < 225) return 'Lateral Derecho (6m)';
-                return 'Extremo Derecho (6m)';
-            } else if (y < 150) {
+            x = Number(x); y = Number(y);
+            const dx = x - 150;
+            const d = Math.hypot(dx, y);                      // distancia a la portería (150,0): 90 = línea de 6m y 120 = línea de 9m del dibujo
+            const ang = Math.atan2(dx, y) * 180 / Math.PI;    // 0 = de frente, negativo = por la izquierda
+            if (y < 70 && x < 55) return 'Extremo Izquierdo (6m)';
+            if (y < 70 && x > 245) return 'Extremo Derecho (6m)';
+            if (d <= 90) {
+                if (ang < -25) return 'Lateral Izquierdo (6m)';
+                if (ang > 25) return 'Lateral Derecho (6m)';
+                return 'Central / Pivote (6m)';
+            }
+            if (d <= 150) {
                 if (x < 100) return '9m Izquierda';
                 if (x < 200) return '9m Central';
                 return '9m Derecha';
-            } else {
-                return 'Distancia Lejana (10m+)';
             }
+            return 'Distancia Lejana (10m+)';
         }
 
         function actualizarVistaMapaEx() {
@@ -2502,7 +3521,7 @@
                     badge.style.display = 'flex';
                     badge.style.flexDirection = 'column';
                     badge.style.justifyContent = 'center';
-                    badge.innerHTML = `<span style="color:#94a3b8; font-size:0.55rem; font-weight:bold;">${sec.titulo}</span><span style="color: var(--accent-gold); font-size:0.75rem; font-weight:900;">${pctDensidadSector}%</span><span style="color:#fff; font-size:0.55rem;">(${sectorTotal} tiros)</span>`;
+                    badge.innerHTML = `<span style="color:#94a3b8; font-size: 0.66rem; font-weight:bold;">${sec.titulo}</span><span style="color: var(--accent-gold); font-size:0.75rem; font-weight:900;">${pctDensidadSector}%</span><span style="color:#fff; font-size: 0.66rem;">(${sectorTotal} tiros)</span>`;
                     overlayZonas.appendChild(badge);
                 });
             }
