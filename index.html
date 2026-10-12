@@ -972,7 +972,10 @@
 
         /* Los contadores (minutos, ataques, exclusión) son de un partido: solo se conservan al cargar un partido */
         /* Sanea datos que pueden venir de un JSON importado o de la carpeta (tipos, ids, colores) */
-        const TIPOS_ACCION = ['GOL', 'FALLO', 'ASISTENCIA', 'EXCLUSION', 'PARADA_PORTERO', 'OTRO'];
+        const TIPOS_ACCION = ['GOL', 'FALLO', 'ASISTENCIA', 'EXCLUSION', 'PARADA_PORTERO', 'PERDIDA', 'OTRO'];
+        /* Acciones con las que perdemos la posesión: cierran el ataque en curso aunque estén configuradas con otro tipo */
+        const RX_PIERDE_POSESION = /p[eé]rdida|perdida|fuera|poste|bloquead|pasos|dobles|parada.*rival|rival.*parada/i;
+        function cierraAtaque(nombre, tipo) { return tipo === 'GOL' || tipo === 'FALLO' || tipo === 'PERDIDA' || RX_PIERDE_POSESION.test(String(nombre || '')); }
         function sanearJugadores(lista) {
             const usados = new Set(); let extra = 0;
             return (Array.isArray(lista) ? lista : []).filter(p => p && typeof p === 'object').map(p => {
@@ -1667,10 +1670,11 @@
 
         function textoATipo(txt) {
             const s = String(txt || '').toLowerCase();
-            if (/parad/.test(s) && /portero/.test(s)) return 'PARADA_PORTERO';
+            if (/p[eé]rdida|perdida/.test(s)) return 'PERDIDA';
+            if (/parad/.test(s) && /portero/.test(s) && !/rival/.test(s)) return 'PARADA_PORTERO';
             if (/exclu/.test(s)) return 'EXCLUSION';
             if (/asist/.test(s)) return 'ASISTENCIA';
-            if (/fallo|fuera|parad/.test(s)) return 'FALLO';
+            if (/fallo|fuera|poste|bloquead|parad/.test(s)) return 'FALLO';
             if (/gol/.test(s)) return 'GOL';
             return 'OTRO';
         }
@@ -1683,8 +1687,8 @@
             if (!nombre || nombre.trim() === '') return;
             if (actions.some(a => a.name.toLowerCase() === nombre.trim().toLowerCase())) { alert('Ya existe una acción con ese nombre.'); return; }
 
-            const sugerido = { GOL: 'gol', FALLO: 'fallo', ASISTENCIA: 'asistencia', EXCLUSION: 'exclusion', PARADA_PORTERO: 'parada portero', OTRO: 'otro' }[clasificarAccion(nombre)];
-            const tipoTxt = prompt('¿Cómo cuenta esta acción en las estadísticas?\n\ngol (suma al marcador) / fallo / asistencia / exclusion / parada portero / otro', sugerido);
+            const sugerido = { GOL: 'gol', FALLO: 'fallo', ASISTENCIA: 'asistencia', EXCLUSION: 'exclusion', PARADA_PORTERO: 'parada portero', PERDIDA: 'perdida', OTRO: 'otro' }[clasificarAccion(nombre)];
+            const tipoTxt = prompt('¿Cómo cuenta esta acción en las estadísticas?\n\ngol (suma al marcador) / fallo (lanzamiento fuera, parada del portero rival) / perdida (pérdida de balón) / asistencia / exclusion / parada portero (la de TU portero) / otro', sugerido);
             if (tipoTxt === null) return;
 
             actions.push({ id: 'act_' + Date.now(), category: normalizedCat, name: nombre.trim(), tipo: textoATipo(tipoTxt) });
@@ -1716,8 +1720,9 @@
             const n = String(nombre || '').toLowerCase();
             if (/exclusi[oó]n/.test(n)) return 'EXCLUSION';
             if (/asistencia/.test(n)) return 'ASISTENCIA';
-            if (/parada/.test(n) && /portero/.test(n)) return 'PARADA_PORTERO';
-            if (/fallo|parad[oó]n|\bparada\b/.test(n)) return 'FALLO';
+            if (/p[eé]rdida|perdida|pasos|dobles/.test(n)) return 'PERDIDA';
+            if (/parada/.test(n) && /portero/.test(n) && !/rival/.test(n)) return 'PARADA_PORTERO';   // parada de NUESTRO portero
+            if (/fallo|fuera|poste|bloquead|parad[oó]n|\bparada\b/.test(n)) return 'FALLO';          // lanzamiento propio que no es gol (incluye "parada del portero rival")
             if (/\bgol(es)?\b/.test(n)) return 'GOL';
             return 'OTRO';
         }
@@ -2409,10 +2414,10 @@
             registrarGolAutomatico();
         }
 
-        /* Ataque en curso + jugador + zona de campo + zona de portería = gol registrado solo.
+        /* Jugador + zona de campo + zona de portería = gol registrado solo (el ataque se inicia solo si no lo estaba).
            El tipo de gol (6m / 9m) se deduce de la zona de campo marcada. */
         function registrarGolAutomatico() {
-            if (!modoRapido || !ataqueEnCurso || courtCoords.x < 0 || goalCoords.x < 0) return false;
+            if (!modoRapido || courtCoords.x < 0 || goalCoords.x < 0) return false;
             if (!players.some(x => x.id === selectedPlayerId)) return false;
             const zona = obtenerZonaTacticaCampo(courtCoords.x, courtCoords.y);
             const patron = /\(6m\)/.test(zona) ? /6\s*m/i : /9m|10m/.test(zona) ? /9\s*m/i : null;
@@ -2422,8 +2427,19 @@
             if (!accion) return false;
             selectedAction = accion.name;
             renderActions();
-            registerEvent();
+            registerEvent(true);
             return true;
+        }
+
+        /* Si tras un gol automático pulsas Fallo/Parada para el mismo jugador, se deshace el gol y se registra el fallo
+           con las mismas zonas de campo y portería (el marcador baja y el ataque queda bien contado). */
+        function convertirGolAutoEnFallo(p) {
+            const i = (eventsLog[0] && eventsLog[0].autoCierre) ? 1 : 0;
+            const g = eventsLog[i];
+            if (!g || g.tipo !== 'GOL' || !g.golAuto || g.jugadorId !== p.id) return;
+            const cc = { x: g.campoX, y: g.campoY }, gc = { x: g.golX, y: g.golY };
+            deshacerUltimo();
+            courtCoords = cc; goalCoords = gc;
         }
 
         function reiniciarMarcadoresClic() {
@@ -2434,16 +2450,20 @@
             document.getElementById('court-marker').setAttribute('cy', -20);
         }
 
-        function registerEvent() {
+        function registerEvent(auto) {
             const p = players.find(x => x.id === selectedPlayerId);
             if (!p) return alert('Selecciona un jugador');
             const categoriaActiva = actions.find(a => a.name === selectedAction)?.category || 'attack';
             const tipo = tipoDeAccion(selectedAction);
 
-            // Si se marca una acción de ataque (asistencia, gol, fallo...) sin haber iniciado el ataque, se inicia solo.
+            // Si el último evento fue un gol automático de este jugador y ahora marcas fallo/parada, el gol se corrige a fallo
+            if (tipo === 'FALLO') convertirGolAutoEnFallo(p);
+
+            // Inician ataque solo: la recuperación de balón y cualquier acción de ataque (asistencia, gol, fallo...).
             // El 7m no cuenta: es una falta que ya cortó el ataque anterior.
             let ataqueAuto = false;
-            if (categoriaActiva === 'attack' && !ataqueEnCurso && !/\b7\s*m\b/i.test(selectedAction)) {
+            const iniciaAtaque = /recuper/i.test(selectedAction) || cierraAtaque(selectedAction, tipo) || (categoriaActiva === 'attack' && !/\b7\s*m\b/i.test(selectedAction));
+            if (!ataqueEnCurso && iniciaAtaque) {
                 registrarInicioAtaque();
                 ataqueAuto = true;
             }
@@ -2467,14 +2487,14 @@
                 lado: 'home', categoria: categoriaActiva.toUpperCase(), tipo,
                 accion: selectedAction, dorsal: p.number, jugadorId: p.id, jugador: p.name,
                 zonaPorteriaEscrita: zonaPorteria, golX: gX, golY: gY,
-                zonaCampo, campoX: cX, campoY: cY, ataqueAuto
+                zonaCampo, campoX: cX, campoY: cY, ataqueAuto, golAuto: auto === true
             });
 
             reiniciarMarcadoresClic();
             renderFeed();
             if (tipo === 'EXCLUSION') { renderRoster(); avisarTerceraExclusion(p); }
-            // Un gol o un fallo propio cierran el ataque en curso (si no, la eficacia de ataque no cuadra)
-            if (ataqueEnCurso && (tipo === 'GOL' || tipo === 'FALLO')) registrarInicioAtaque(true);
+            // Gol, fallo, lanzamiento fuera, parada del portero rival o pérdida de balón: perdemos la posesión y el ataque termina
+            if (ataqueEnCurso && cierraAtaque(selectedAction, tipo)) registrarInicioAtaque(true);
 
             if (modoRapido) {
                 if ((tipo === 'GOL' || tipo === 'FALLO') && gX === '-') iniciarUbicacionPendiente(ev);
@@ -2494,6 +2514,7 @@
             if (zonaTexto === 'Centro') zonaTexto = 'Media Centro';   // mismo nombre que usan los goles propios
             awayGoals++;
             actualizarMarcador();
+            if (ataqueEnCurso) registrarInicioAtaque(true);      // si el rival marca, nuestro ataque ya había terminado
 
             let cX = '-', cY = '-', zonaCampo = '-';
             if (courtCoords.x >= 0) {
@@ -3391,7 +3412,7 @@
                 'Dorsal', 'Jugador', 'Posicion', 'ID_Jugador', 'Estado_Actual', 'Excluido_Ahora', 'Segundos_En_Pista', 'Minutos_En_Pista', 'Tiempo_En_Pista_mmss',
                 'Ataques_Participados', 'Segundos_Exclusion_Restantes', 'Segundos_Excluido', 'Goles', 'Asistencias', 'Fallos', 'Lanzamientos',
                 'Acierto_Lanzamiento', 'Exclusiones', 'Total_Acciones', 'Cambios_Entradas', 'Cambios_Salidas',
-                'Goles_A_Favor_En_Pista', 'Goles_En_Contra_En_Pista', 'Diferencia_En_Pista', 'Exclusiones_Rival_Provocadas'
+                'Goles_A_Favor_En_Pista', 'Goles_En_Contra_En_Pista', 'Diferencia_En_Pista', 'Exclusiones_Rival_Provocadas', 'Perdidas_Balon'
             ]];
             jugs.forEach(p => {
                 const ev = eventosDeJugador(p);
@@ -3405,7 +3426,7 @@
                     (goles + fallos) > 0 ? P(goles / (goles + fallos)) : '', c('EXCLUSION'), ev.length,
                     camb.filter(e => e.accion === 'Entra a pista').length, camb.filter(e => e.accion === 'Sale a banquillo').length,
                     impacto[p.id].gf, impacto[p.id].gc, impacto[p.id].gf - impacto[p.id].gc,
-                    eventsLog.filter(e => e.tipo === 'EXCLUSION' && e.lado === 'away' && e.provocadaPorId === p.id).length
+                    eventsLog.filter(e => e.tipo === 'EXCLUSION' && e.lado === 'away' && e.provocadaPorId === p.id).length, c('PERDIDA')
                 ]);
             });
             hojas.push({ nombre: 'Jugadores', cabecera: true, filas: filasJug });
