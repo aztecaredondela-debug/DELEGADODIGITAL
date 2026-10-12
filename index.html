@@ -62,6 +62,8 @@
 
         /* LADO IZQUIERDO: JUGADORES Y ACCIONES */
         .left-main-panel { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; padding-right: 3px; padding-bottom: 64px; }
+        .left-main-panel > * { flex-shrink: 0; }                      /* los bloques (plantilla, ataque, acciones) nunca se aplastan entre sí: si no caben, aparece scroll */
+        #ataque-panel-card { min-height: 52px; }
         
         .roster-section { background: rgba(9, 13, 22, 0.7); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 4px; display: flex; flex-direction: column; gap: 3px; }
         .sub-header { font-size: 0.65rem; font-weight: 800; color: var(--accent-gold); display: flex; justify-content: space-between; align-items: center; letter-spacing: 0.5px; }
@@ -214,6 +216,7 @@
         .porteria-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: #000; padding: 5px; border: 2px solid var(--accent-red); border-radius: 6px; margin-bottom: 10px; }
         .btn-zona { background: #090d16; color: #fff; border: 1px solid var(--border-color); border-radius: 4px; padding: 10px 2px; font-size: 0.7rem; font-weight: 800; cursor: pointer; transition: 0.1s; }
         .btn-zona:active { background: var(--accent-red); }
+        .btn-zona.sel-excl { border-color: var(--accent-gold); }
     
 
         /* ===== POSICIONES Y JUGADORES EN PISTA ===== */
@@ -245,6 +248,17 @@
         .event-loc-btn { background: var(--accent-gold); color: #000; border: none; border-radius: 4px; padding: 2px 6px; font-size: 0.65rem; font-weight: 900; cursor: pointer; flex-shrink: 0; margin-right: 4px; }
         #toast-rapido { position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 60; display: none; align-items: center; gap: 8px; max-width: 92vw; background: #0b1220; color: #fff; border: 1px solid var(--accent-gold); border-radius: 6px; padding: 6px 10px; font-size: 0.75rem; box-shadow: 0 2px 10px rgba(0,0,0,0.6); }
         #toast-rapido button { background: transparent; color: #fff; border: 1px solid #475569; border-radius: 4px; cursor: pointer; font-weight: 900; padding: 2px 6px; }
+        /* ===== JUGADORES OCULTOS (NO CONVOCADOS) ===== */
+        .p-btn-ocultar { background: #475569; }
+        .p-btn-mostrar { background: #0f766e; }
+        body.modo-gestion-plantilla .player-card.oculto, .player-card.oculto { background: var(--card-banq-bg); border: 2px dashed var(--text-muted); cursor: default; }
+        .player-card.oculto .player-name span, .player-card.oculto .player-number span { opacity: 0.6; text-decoration: line-through; }
+        /* En "Gestionar Plantilla" las tarjetas llevan más botones: se reparten en las columnas que caben (antes la 4ª se salía de la pantalla) */
+        body.modo-gestion-plantilla .roster-grid { grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); }
+        /* Tablet en horizontal / portátil pequeño: con 4 columnas la última tarjeta se salía de la pantalla */
+        @media (min-width: 901px) and (max-width: 1100px) { .roster-grid { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); } }
+        .aviso-ocultos { font-size: 0.66rem; color: var(--text-muted); background: rgba(148,163,184,0.12); border: 1px dashed var(--border-color); border-radius: 4px; padding: 3px 6px; cursor: pointer; text-align: center; }
+        .aviso-ocultos:hover { color: var(--accent-gold); border-color: var(--accent-gold); }
         @media (max-width: 900px) {
             .main-layout { grid-template-columns: 1fr; grid-auto-rows: max-content; overflow-y: auto; align-content: start; }
             .left-main-panel { overflow: visible; }
@@ -316,6 +330,15 @@
                     <span class="editable-title-wrap"><span id="txt-sub-banquillo">🪑 BANQUILLO</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-sub-banquillo')" title="Ajustar tamaño">🔍📏</button></span>
                 </div>
                 <div class="roster-grid" id="roster-bench"></div>
+
+                <!-- Aviso (modo normal): hay jugadores ocultos en este partido -->
+                <div class="aviso-ocultos" id="aviso-ocultos" style="display:none;" onclick="abrirGestionOcultos()" title="Toca para ver y volver a mostrar a los jugadores ocultos"></div>
+
+                <!-- Bloque (solo en Gestionar Plantilla): jugadores no convocados, para volver a mostrarlos -->
+                <div id="bloque-ocultos" style="display:none;">
+                    <div class="sub-header" style="margin-top: 2px;"><span>🙈 NO CONVOCADOS (ocultos en este partido)</span></div>
+                    <div class="roster-grid" id="roster-ocultos"></div>
+                </div>
             </div>
 
             <!-- TARJETA DE ATAQUES EN VIVO -->
@@ -415,7 +438,7 @@
                 <div style="display: flex; gap: 4px; margin-top: 4px;">
                     <button class="btn-register-main" id="btn-reg-main" onclick="registerEvent()">✅ REGISTRAR</button><button class="btn-edit-label" onclick="ajustarTamanioElemento('btn-reg-main')" title="Ajustar tamaño" style="color:#000;">🔍</button>
                     <button class="btn-gol-rival" id="btn-gol-rival-main" onclick="abrirModalGolRival()">⚽ GOL RIVAL</button><button class="btn-edit-label" onclick="ajustarTamanioElemento('btn-gol-rival-main')" title="Ajustar tamaño" style="color:#fff;">🔍</button>
-                    <button class="btn-gol-rival" id="btn-excl-rival-main" style="background:var(--accent-gold); color:#000;" onclick="registrarExclusionRival()">🟨 EXCL. RIVAL</button>
+                    <button class="btn-gol-rival" id="btn-excl-rival-main" style="background:var(--accent-gold); color:#000;" onclick="abrirModalExclRival()">🟨 EXCL. RIVAL</button>
                 </div>
             </div>
 
@@ -561,6 +584,17 @@
                 <button class="btn btn-blue" id="btn-export-config-json" style="flex:1; justify-content:center; padding: 5px;" onclick="exportarConfigJSON()">📥 Exportar Config (Archivo)</button><button class="btn-edit-label" onclick="ajustarTamanioElemento('btn-export-config-json')" title="Ajustar tamaño" style="color:#fff;">🔍</button>
                 <button class="btn btn-purple" id="btn-import-config-json" style="flex:1; justify-content:center; padding: 5px;" onclick="importarConfigJSON()">📤 Importar Config (Archivo)</button><button class="btn-edit-label" onclick="ajustarTamanioElemento('btn-import-config-json')" title="Ajustar tamaño" style="color:#fff;">🔍</button>
             </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ¿QUIÉN PROVOCÓ LA EXCLUSIÓN DEL RIVAL? -->
+    <div class="modal-overlay-small" id="modal-excl-rival">
+        <div class="modal-content" style="width: 340px; max-height: 90vh; overflow-y: auto;">
+            <div style="font-size: 0.9rem; font-weight: 900; color: var(--accent-gold); margin-bottom: 3px;">🟨 EXCLUSIÓN RIVAL (2 min)</div>
+            <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 8px;">¿Qué jugador la provocó?</div>
+            <div id="excl-rival-jugadores" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-bottom: 8px;"></div>
+            <button class="btn btn-blue" style="width: 100%; justify-content: center; padding: 6px; margin-bottom: 4px;" onclick="registrarExclusionRival(null)">Sin asignar</button>
+            <button class="btn btn-red" style="width: 100%; justify-content: center; padding: 6px;" onclick="cerrarModalExclRival()">Cancelar</button>
         </div>
     </div>
 
@@ -830,6 +864,7 @@
                 btn.style.color = '';
                 btn.innerText = '⚙️ Gestionar Plantilla';
             }
+            renderRoster();       // en modo gestión se ven también los jugadores ocultos; al salir desaparecen
         }
 
         function toggleModoAjusteTexto() {
@@ -947,6 +982,7 @@
                 const o = { ...p, id, name: String(p.name == null ? '' : p.name), posicion: p.posicion ? String(p.posicion) : '', onField: !!p.onField,
                     number: p.number == null ? 0 : (Number.isFinite(Number(p.number)) ? Number(p.number) : String(p.number)) };
                 if (o.color && !/^#[0-9a-fA-F]{3,8}$/.test(String(o.color))) delete o.color;
+                if (o.oculto) o.oculto = true; else delete o.oculto;
                 return o;
             });
         }
@@ -1011,7 +1047,7 @@
             const plantillas = leerJSON('sar_equipos_guardados', {});
             // Se guardan los contadores a cero: una plantilla no debe arrastrar los minutos de otro partido
             if (plantillas[nombreEquipo.trim()] && !confirm(`Ya existe la plantilla "${nombreEquipo.trim()}". ¿Sobrescribirla?`)) return;
-            plantillas[nombreEquipo.trim()] = players.filter(p => !p.inactivo).map(p => ({ ...p, totalSeconds: 0, attacksCount: 0, exclusionSeconds: 0, segundosExcluido: 0 }));
+            plantillas[nombreEquipo.trim()] = players.filter(p => !p.inactivo).map(p => { const c = { ...p, totalSeconds: 0, attacksCount: 0, exclusionSeconds: 0, segundosExcluido: 0 }; delete c.oculto; return c; });   // la plantilla guarda a TODOS (la convocatoria es solo de un partido)
             if (!escribirJSON('sar_equipos_guardados', plantillas)) { alert('No se pudo guardar: almacenamiento lleno.'); return; }
 
             cargarPlantillasGuardadasSelector();
@@ -1059,7 +1095,7 @@
                 fecha: new Date().toLocaleString(),
                 fechaISO: new Date().toISOString(),
                 data: {
-                    actions: actions, players: players, colores: coloresPersonalizados, posiciones: posiciones,
+                    actions: actions, players: players.map(p => { const c = { ...p }; delete c.oculto; return c; }), colores: coloresPersonalizados, posiciones: posiciones,
                     tamaniosTextos: leerCrudo('sar_tamanios_textos'), etiquetasTextos: leerCrudo('sar_etiquetas_textos')
                 }
             });
@@ -1197,6 +1233,7 @@
         function exportarConfigJSON() {
             guardarConfigLocalYa();
             const cfg = leerJSON('sar_delegado_config', {});
+            if (Array.isArray(cfg.players)) cfg.players = cfg.players.map(p => { const c = { ...p }; delete c.oculto; return c; });
             cfg.etiquetasTextos = leerJSON('sar_etiquetas_textos', {});      // ahora la exportación incluye etiquetas y tamaños de texto
             cfg.tamaniosTextos = leerJSON('sar_tamanios_textos', {});
             descargarBlob(new Blob([JSON.stringify(cfg)], { type: 'application/json' }), 'sar_delegado_config.json');
@@ -1240,8 +1277,11 @@
             const field = document.getElementById('roster-field'), bench = document.getElementById('roster-bench');
             field.innerHTML = ''; bench.innerHTML = '';
 
-            const activos = players.filter(p => !p.inactivo);
+            const gestion = document.body.classList.contains('modo-gestion-plantilla');
+            const activos = players.filter(p => !p.inactivo && !p.oculto);      // los ocultos (no convocados) no se pintan en pista/banquillo
+            const ocultos = players.filter(p => !p.inactivo && p.oculto);
             if (activos.length > 0 && !activos.some(p => p.id === selectedPlayerId)) selectedPlayerId = activos[0].id;
+            else if (activos.length === 0) selectedPlayerId = null;
 
             activos.forEach(p => {
                 const card = document.createElement('div');
@@ -1274,6 +1314,7 @@
                                 <span class="editable-title-wrap"><button class="p-action-btn p-btn-exc" id="btn-exc-p-${p.id}" title="Exclusión 2m" onclick="event.stopPropagation(); aplicarExclusion(${p.id})">2m</button><button class="btn-edit-label" id="p-exc-btn-${p.id}" onclick="event.stopPropagation(); ajustarTamanioElemento('btn-exc-p-${p.id}')" title="Ajustar tamaño 2m">🔍</button></span>
                                 <button class="p-action-btn p-btn-edit" title="Editar jugador" onclick="event.stopPropagation(); editarJugador(${p.id})">✏️</button>
                                 <span class="editable-title-wrap"><button class="p-action-btn p-btn-toggle" id="btn-toggle-p-${p.id}" title="Cambiar a Pista/Banquillo" onclick="event.stopPropagation(); alternarEstadoJugador(${p.id})">⇄</button><button class="btn-edit-label" id="p-toggle-btn-${p.id}" onclick="event.stopPropagation(); ajustarTamanioElemento('btn-toggle-p-${p.id}')" title="Ajustar tamaño ⇄">🔍</button></span>
+                                <button class="p-action-btn p-btn-ocultar solo-gestion" title="No convocado: ocultar a este jugador en este partido" onclick="event.stopPropagation(); ocultarJugador(${p.id})">👁</button>
                                 <button class="p-action-btn p-btn-delete" title="Eliminar jugador" onclick="event.stopPropagation(); eliminarJugador(${p.id})">×</button>
                             </div>
                         </div>
@@ -1282,15 +1323,81 @@
                 `;
                 (p.onField ? field : bench).appendChild(card);
             });
+
+            // Jugadores ocultos: solo se ven en "Gestionar Plantilla" (para volver a mostrarlos); fuera de ese modo solo queda un aviso
+            const listaOc = document.getElementById('roster-ocultos'), bloqueOc = document.getElementById('bloque-ocultos'), avisoOc = document.getElementById('aviso-ocultos');
+            if (listaOc) {
+                listaOc.innerHTML = '';
+                if (gestion) ocultos.forEach(p => listaOc.appendChild(crearTarjetaOculto(p)));
+                bloqueOc.style.display = (gestion && ocultos.length) ? '' : 'none';
+                avisoOc.style.display = (!gestion && ocultos.length) ? '' : 'none';
+                avisoOc.innerText = `🙈 ${ocultos.length} ${ocultos.length === 1 ? 'jugador oculto' : 'jugadores ocultos'} (no convocados) · toca para verlos`;
+            }
             guardarConfigLocal();
             aplicarTamaniosGuardados();
+        }
+
+        /* =====================================================================
+           JUGADORES OCULTOS (NO CONVOCADOS EN ESTE PARTIDO)
+           ===================================================================== */
+        function partidoEnMarcha() { return timerInterval !== null || seconds > 0 || eventsLog.length > 0; }
+
+        /* ¿Tiene ya datos en este partido? (minutos, ataques o acciones en la cronología) */
+        function jugadorHaParticipado(p) {
+            return (p.totalSeconds || 0) > 0 || (p.attacksCount || 0) > 0 || (p.segundosExcluido || 0) > 0 ||
+                eventsLog.some(e => e.jugadorId === p.id);
+        }
+
+        function ocultarJugador(id) {
+            const p = players.find(x => x.id === id);
+            if (!p || p.inactivo) return;
+            if (partidoEnMarcha() && (p.onField || jugadorHaParticipado(p))) {
+                alert(`#${p.number} ${p.name} está en pista o ya tiene datos en este partido, así que no se puede ocultar (se perderían sus minutos y acciones).\n\nOcúltalo solo si no ha jugado.`);
+                return;
+            }
+            p.oculto = true;
+            p.onField = false;
+            p.exclusionSeconds = 0;
+            if (cambioPendienteId === id) cambioPendienteId = null;
+            renderRoster();
+        }
+
+        function mostrarJugador(id) {
+            const p = players.find(x => x.id === id);
+            if (!p) return;
+            delete p.oculto;           // vuelve al banquillo
+            p.onField = false;
+            renderRoster();
+        }
+
+        function abrirGestionOcultos() {
+            if (!document.body.classList.contains('modo-gestion-plantilla')) toggleModoGestionPlantilla();
+        }
+
+        function crearTarjetaOculto(p) {
+            const card = document.createElement('div');
+            card.className = 'player-card oculto';
+            card.setAttribute('data-pid', p.id);
+            card.innerHTML = `
+                <div class="player-info">
+                    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 3px;">
+                        <span class="player-number"><span>#${escaparHTML(p.number)}</span></span>
+                        <span class="player-name"><span>${escaparHTML(p.name)}</span></span>
+                    </div>
+                    <div style="display:flex; gap:3px; align-items:center; flex-wrap:wrap;">
+                        <button class="p-action-btn p-btn-mostrar" title="Volver a mostrar (pasa al banquillo)" onclick="event.stopPropagation(); mostrarJugador(${p.id})">👁 Mostrar</button>
+                        <button class="p-action-btn p-btn-edit" title="Editar jugador" onclick="event.stopPropagation(); editarJugador(${p.id})">✏️</button>
+                        <button class="p-action-btn p-btn-delete" title="Eliminar jugador" onclick="event.stopPropagation(); eliminarJugador(${p.id})">×</button>
+                    </div>
+                </div>`;
+            return card;
         }
 
         /* Actualiza solo los contadores de tiempo (sin reconstruir todo el DOM cada segundo) */
         function actualizarBadgesJugadores() {
             let rehacer = false;
             players.forEach(p => {
-                if (p.inactivo) return;
+                if (p.inactivo || p.oculto) return;
                 const t = document.getElementById('p-time-' + p.id);
                 if (t) t.innerText = `⏱ ${formatearSegundos(p.totalSeconds || 0)} | ⚔ ${p.attacksCount || 0}`;
                 const excluido = (p.exclusionSeconds || 0) > 0;
@@ -1310,7 +1417,9 @@
             const nombre = prompt('Nombre del jugador:') || `Jugador #${num}`;
             let id = Date.now();
             while (players.some(p => p.id === id)) id++;
-            players.push({ id, number: dorsal, name: nombre, posicion: '', onField: true, totalSeconds: 0, attacksCount: 0, exclusionSeconds: 0 });
+            // Con 7 en pista (o con el partido en marcha) el nuevo jugador entra al banquillo: así no se cuela un 8º en pista sin registrar el cambio
+            const entraEnPista = !partidoEnMarcha() && players.filter(p => p.onField && !p.inactivo && !p.oculto).length < 7;
+            players.push({ id, number: dorsal, name: nombre, posicion: '', onField: entraEnPista, totalSeconds: 0, attacksCount: 0, exclusionSeconds: 0 });
             selectedPlayerId = id;
             renderRoster();
         }
@@ -1365,8 +1474,8 @@
         function eliminarJugador(id) {
             const p = players.find(x => x.id === id);
             if (!p) return;
-            const partidoEnMarcha = eventsLog.length > 0 || seconds > 0;
-            if (partidoEnMarcha) {
+            const conservarDatos = (eventsLog.length > 0 || seconds > 0) && (!p.oculto || jugadorHaParticipado(p));
+            if (conservarDatos) {
                 if (confirm(`#${p.number} ${p.name} ya forma parte de este partido.\n\nNo se borrará: dejará de verse en la plantilla, pero sus acciones y minutos se conservarán en Analítica y en el Excel.\n\n¿Quitarlo de la plantilla?`)) {
                     p.inactivo = true;
                     p.onField = false;
@@ -1424,10 +1533,34 @@
             if (n >= 3) alert(`⚠ #${p.number} ${p.name} acumula ${n} exclusiones de 2 min: la 3ª exclusión implica descalificación. Revisa el acta.`);
         }
 
-        function registrarExclusionRival() {
-            crearEvento({ lado: 'away', categoria: 'DEFENSA', tipo: 'EXCLUSION', accion: 'Exclusión 2m (rival)', dorsal: '-', jugador: 'Rival' });
+        /* Exclusión del rival: se pregunta qué jugador nuestro la provocó (no cuenta como exclusión suya) */
+        function abrirModalExclRival() {
+            const cont = document.getElementById('excl-rival-jugadores');
+            cont.innerHTML = '';
+            const lista = players.filter(p => !p.inactivo && !p.oculto)
+                .sort((a, b) => (b.onField ? 1 : 0) - (a.onField ? 1 : 0));
+            lista.forEach(p => {
+                const b = document.createElement('button');
+                b.className = 'btn-zona' + (p.id === selectedPlayerId ? ' sel-excl' : '');
+                b.style.opacity = p.onField ? '1' : '0.65';
+                b.innerHTML = `#${escaparHTML(p.number)}<br><span style="font-size:0.6rem; font-weight:600;">${escaparHTML(p.name)}</span>`;
+                b.onclick = () => registrarExclusionRival(p.id);
+                cont.appendChild(b);
+            });
+            document.getElementById('modal-excl-rival').classList.add('active');
+        }
+        function cerrarModalExclRival() { document.getElementById('modal-excl-rival').classList.remove('active'); }
+
+        function registrarExclusionRival(jugadorId) {
+            const q = jugadorId != null ? players.find(x => x.id === jugadorId) : null;
+            crearEvento({
+                lado: 'away', categoria: 'DEFENSA', tipo: 'EXCLUSION', accion: 'Exclusión 2m (rival)', dorsal: '-', jugador: 'Rival',
+                provocadaPorId: q ? q.id : null, provocadaPorDorsal: q ? q.number : '', provocadaPor: q ? q.name : ''
+            });
+            cerrarModalExclRival();
             renderFeed();
-            mostrarToastRapido('🟨 Exclusión 2m del rival registrada', 2000);
+            mostrarToastRapido(q ? `🟨 Exclusión 2m del rival · provocada por <b>#${escaparHTML(q.number)} ${escaparHTML(q.name)}</b>`
+                                 : '🟨 Exclusión 2m del rival registrada', 2500);
         }
 
         function pedirTiempoMuerto(equipo) {
@@ -2099,7 +2232,7 @@
             const tarjeta = el.closest('.player-card');
             if (tarjeta) {
                 const otro = players.find(x => String(x.id) === tarjeta.getAttribute('data-pid'));
-                if (otro && otro.id !== origenId && otro.onField !== origen.onField) return { tipo: 'swap', otroId: otro.id, elemento: tarjeta };
+                if (otro && !otro.oculto && otro.id !== origenId && otro.onField !== origen.onField) return { tipo: 'swap', otroId: otro.id, elemento: tarjeta };
             }
             let zona = el.closest('#roster-field, #roster-bench');
             if (!zona) {
@@ -2186,6 +2319,7 @@
             }
             const nombre = ev.accion;
             eliminarEvento(ev.id);
+            if (ev.ataqueAuto && ataqueEnCurso) cancelarAtaqueAuto();   // el ataque lo abrió esta acción: se deshace con ella
             renderRoster();
             mostrarToastRapido(`↩ Deshecho: ${escaparHTML(nombre)}`, 2000);
         }
@@ -2215,6 +2349,15 @@
                 panelCard.classList.remove('ataque-panel-activo');
                 titleLabel.innerText = base;
             }
+        }
+
+        function cancelarAtaqueAuto() {
+            ataqueParticipantes.forEach(id => { const q = players.find(x => x.id === id); if (q && (q.attacksCount || 0) > 0) q.attacksCount--; });
+            ataqueParticipantes = [];
+            ataqueEnCurso = false;
+            ataqueNumero = Math.max(0, ataqueNumero - 1);
+            pintarEstadoAtaque();
+            renderRoster();
         }
 
         function registrarInicioAtaque(auto) {
@@ -2263,6 +2406,24 @@
             goalCoords.y = gy;
             document.getElementById('goal-marker').setAttribute('cx', goalCoords.x);
             document.getElementById('goal-marker').setAttribute('cy', goalCoords.y);
+            registrarGolAutomatico();
+        }
+
+        /* Ataque en curso + jugador + zona de campo + zona de portería = gol registrado solo.
+           El tipo de gol (6m / 9m) se deduce de la zona de campo marcada. */
+        function registrarGolAutomatico() {
+            if (!modoRapido || !ataqueEnCurso || courtCoords.x < 0 || goalCoords.x < 0) return false;
+            if (!players.some(x => x.id === selectedPlayerId)) return false;
+            const zona = obtenerZonaTacticaCampo(courtCoords.x, courtCoords.y);
+            const patron = /\(6m\)/.test(zona) ? /6\s*m/i : /9m|10m/.test(zona) ? /9\s*m/i : null;
+            const golesPropios = actions.filter(a => tipoDeAccion(a.name) === 'GOL');
+            const accion = golesPropios.find(a => patron && patron.test(a.name))
+                        || golesPropios.find(a => !/7\s*m|contra/i.test(a.name));
+            if (!accion) return false;
+            selectedAction = accion.name;
+            renderActions();
+            registerEvent();
+            return true;
         }
 
         function reiniciarMarcadoresClic() {
@@ -2278,6 +2439,14 @@
             if (!p) return alert('Selecciona un jugador');
             const categoriaActiva = actions.find(a => a.name === selectedAction)?.category || 'attack';
             const tipo = tipoDeAccion(selectedAction);
+
+            // Si se marca una acción de ataque (asistencia, gol, fallo...) sin haber iniciado el ataque, se inicia solo.
+            // El 7m no cuenta: es una falta que ya cortó el ataque anterior.
+            let ataqueAuto = false;
+            if (categoriaActiva === 'attack' && !ataqueEnCurso && !/\b7\s*m\b/i.test(selectedAction)) {
+                registrarInicioAtaque();
+                ataqueAuto = true;
+            }
 
             if (tipo === 'GOL') homeGoals++;
             if (tipo === 'EXCLUSION') p.exclusionSeconds = 120;       // 2 minutos fuera, con cuenta atrás
@@ -2298,7 +2467,7 @@
                 lado: 'home', categoria: categoriaActiva.toUpperCase(), tipo,
                 accion: selectedAction, dorsal: p.number, jugadorId: p.id, jugador: p.name,
                 zonaPorteriaEscrita: zonaPorteria, golX: gX, golY: gY,
-                zonaCampo, campoX: cX, campoY: cY
+                zonaCampo, campoX: cX, campoY: cY, ataqueAuto
             });
 
             reiniciarMarcadoresClic();
@@ -2429,6 +2598,7 @@
 
                 let titulo = `[${escaparHTML(nombreEquipoPorLado(lado))}] ${escaparHTML(e.accion)}`;
                 let detalle = `(${escaparHTML(e.jugador)})`;
+                if (e.tipo === 'EXCLUSION' && e.lado === 'away' && e.provocadaPorId != null) detalle += ` · provocada por #${escaparHTML(e.provocadaPorDorsal)} ${escaparHTML(e.provocadaPor)}`;
                 const sig = eventsLog[i + 1];
                 if (e.cambioId && sig && sig.cambioId === e.cambioId) {      // par entra/sale = una sola tarjeta
                     const entra = e.accion === 'Entra a pista' ? e : sig;
@@ -2767,7 +2937,7 @@
             const select = document.getElementById('select-filter-player');
             const previo = select.value;
             select.innerHTML = '';
-            players.forEach(p => {
+            players.filter(p => !p.oculto).forEach(p => {
                 const opt = document.createElement('option');
                 opt.value = String(p.id);          // se identifica por ID, no por nombre (los nombres pueden repetirse o editarse)
                 opt.innerText = `#${p.number} - ${p.name}${p.inactivo ? ' (inactivo)' : ''}`;
@@ -2995,6 +3165,7 @@
                 return x ? x.map(q => `${q.pos ? q.pos + ' ' : ''}#${q.n} ${q.nm}`.trim()).join(' | ') : '';
             };
             const hojas = [];
+            const jugs = players.filter(p => !p.oculto);       // los no convocados no salen en las hojas por jugador
 
             // Nombres de todas las acciones (configuradas + registradas), para las columnas de acciones
             const nombresAccion = [];
@@ -3033,7 +3204,8 @@
                     ['Plantilla seleccionada', selPlantilla && selPlantilla.value ? selPlantilla.value : '(sin guardar)'],
                     ['Jugadores en plantilla', players.filter(p => !p.inactivo).length],
                     ['Jugadores en pista', players.filter(p => p.onField).length],
-                    ['Jugadores en banquillo', players.filter(p => !p.inactivo && !p.onField).length],
+                    ['Jugadores en banquillo', players.filter(p => !p.inactivo && !p.oculto && !p.onField).length],
+                    ['Jugadores no convocados (ocultos)', players.filter(p => !p.inactivo && p.oculto).length],
                     ['Jugadores quitados a mitad de partido (inactivos)', players.filter(p => p.inactivo).length],
                     ['Jugadores excluidos ahora', players.filter(p => (p.exclusionSeconds || 0) > 0).length],
                     ['Jugador seleccionado', sel ? `#${sel.number} ${sel.name}` : ''],
@@ -3095,7 +3267,7 @@
 
             const impacto = calcularImpactoPista();
             filasAn.push([N(etq('txt-sec-impacto-pista'))], [H('Dorsal'), H('Jugador'), H('Posicion'), H('Goles_A_Favor_En_Pista'), H('Goles_En_Contra_En_Pista'), H('Diferencia')]);
-            players.forEach(pl => {
+            jugs.forEach(pl => {
                 const r = impacto[pl.id];
                 filasAn.push([num(pl.number), pl.name, pl.posicion || '', r.gf, r.gc, r.gf - r.gc]);
             });
@@ -3103,7 +3275,7 @@
 
             filasAn.push([N(etq('txt-sec-desglose-jugador'))]);
             filasAn.push([H('Dorsal'), H('Jugador'), H('Posicion'), H('Tiempo_En_Pista'), H('Ataques')].concat(nombresAccion.map(H), [H('Total_Acciones')]));
-            players.forEach(p => {
+            jugs.forEach(p => {
                 const ev = eventosDeJugador(p);
                 filasAn.push([num(p.number), p.name, p.posicion || '', formatearSegundos(p.totalSeconds), p.attacksCount || 0]
                     .concat(nombresAccion.map(n => ev.filter(e => e.accion === n).length), [ev.length]));
@@ -3148,7 +3320,8 @@
                 'Orden', 'ID_Evento', 'Segundo', 'Tiempo_mmss', 'Goles_Local', 'Goles_Rival', 'Dif_Local_menos_Rival', 'Lado', 'Equipo',
                 'Categoria', 'Tipo', 'Accion', 'Dorsal', 'ID_Jugador', 'Jugador', 'Zona_Porteria', 'Porteria_X', 'Porteria_Y',
                 'Zona_Campo', 'Campo_X', 'Campo_Y', 'Resultado_Tiro_Mapa', 'Ataque_N', 'Inicio_Ataque_Seg', 'Duracion_Ataque_Seg',
-                'Jugadores_En_Pista_Dorsales', 'N_En_Pista', 'Excluidos_Activos_Dorsales', 'ID_Cambio', 'Posicion_Jugador', 'Jugadores_En_Pista_Detalle', 'Parte'
+                'Jugadores_En_Pista_Dorsales', 'N_En_Pista', 'Excluidos_Activos_Dorsales', 'ID_Cambio', 'Posicion_Jugador', 'Jugadores_En_Pista_Detalle', 'Parte',
+                'Provocada_Por_ID', 'Provocada_Por_Dorsal', 'Provocada_Por'
             ]];
             cron.forEach((e, i) => {
                 const gl = num(e.golesLocal), gr = num(e.golesRival);
@@ -3159,7 +3332,8 @@
                     txt(e.zonaPorteriaEscrita), num(e.golX), num(e.golY),
                     txt(e.zonaCampo), num(e.campoX), num(e.campoY), txt(e.resultado),
                     num(e.ataqueNum), num(e.inicioAtaque), num(e.duracionAtaque),
-                    txt(e.enPista), num(e.numEnPista), txt(e.excluidos), txt(e.cambioId), txt(e.posicionJugador), detallePista(e), txt(e.parte)
+                    txt(e.enPista), num(e.numEnPista), txt(e.excluidos), txt(e.cambioId), txt(e.posicionJugador), detallePista(e), txt(e.parte),
+                    e.provocadaPorId != null ? String(e.provocadaPorId) : '', num(e.provocadaPorDorsal), txt(e.provocadaPor)
                 ]);
             });
             hojas.push({ nombre: 'Cronologia', cabecera: true, filas: filasCrono });
@@ -3217,9 +3391,9 @@
                 'Dorsal', 'Jugador', 'Posicion', 'ID_Jugador', 'Estado_Actual', 'Excluido_Ahora', 'Segundos_En_Pista', 'Minutos_En_Pista', 'Tiempo_En_Pista_mmss',
                 'Ataques_Participados', 'Segundos_Exclusion_Restantes', 'Segundos_Excluido', 'Goles', 'Asistencias', 'Fallos', 'Lanzamientos',
                 'Acierto_Lanzamiento', 'Exclusiones', 'Total_Acciones', 'Cambios_Entradas', 'Cambios_Salidas',
-                'Goles_A_Favor_En_Pista', 'Goles_En_Contra_En_Pista', 'Diferencia_En_Pista'
+                'Goles_A_Favor_En_Pista', 'Goles_En_Contra_En_Pista', 'Diferencia_En_Pista', 'Exclusiones_Rival_Provocadas'
             ]];
-            players.forEach(p => {
+            jugs.forEach(p => {
                 const ev = eventosDeJugador(p);
                 const c = t => ev.filter(e => e.tipo === t).length;
                 const goles = c('GOL'), fallos = c('FALLO');
@@ -3230,7 +3404,8 @@
                     p.attacksCount || 0, p.exclusionSeconds || 0, p.segundosExcluido || 0, goles, c('ASISTENCIA'), fallos, goles + fallos,
                     (goles + fallos) > 0 ? P(goles / (goles + fallos)) : '', c('EXCLUSION'), ev.length,
                     camb.filter(e => e.accion === 'Entra a pista').length, camb.filter(e => e.accion === 'Sale a banquillo').length,
-                    impacto[p.id].gf, impacto[p.id].gc, impacto[p.id].gf - impacto[p.id].gc
+                    impacto[p.id].gf, impacto[p.id].gc, impacto[p.id].gf - impacto[p.id].gc,
+                    eventsLog.filter(e => e.tipo === 'EXCLUSION' && e.lado === 'away' && e.provocadaPorId === p.id).length
                 ]);
             });
             hojas.push({ nombre: 'Jugadores', cabecera: true, filas: filasJug });
@@ -3238,7 +3413,7 @@
             /* 8. JUGADOR x ACCIÓN */
             const filasJA = [['Dorsal', 'Jugador', 'Posicion'].concat(nombresAccion, ['Total'])];
             const totales = nombresAccion.map(() => 0);
-            players.forEach(p => {
+            jugs.forEach(p => {
                 const ev = eventosDeJugador(p);
                 const fila = [num(p.number), p.name, p.posicion || ''];
                 nombresAccion.forEach((n, k) => { const cnt = ev.filter(e => e.accion === n).length; totales[k] += cnt; fila.push(cnt); });
@@ -3250,7 +3425,7 @@
 
             /* 9. JUGADOR x ZONA (campo y portería) */
             const filasJZ = [['Dorsal', 'Jugador', 'Posicion', 'Tipo_Zona', 'Zona', 'Lanzamientos', 'Goles', 'Fallos', 'Eficacia']];
-            players.forEach(p => {
+            jugs.forEach(p => {
                 const lanz = eventosDeJugador(p).filter(e => e.tipo === 'GOL' || e.tipo === 'FALLO');
                 const fila = (tipoZona, zona, lista) => {
                     const g = lista.filter(e => e.tipo === 'GOL').length, f = lista.length - g;
@@ -3272,7 +3447,7 @@
             const filasGP = [[
                 'Orden', 'Segundo', 'Tiempo_mmss', 'Marcador_Tras_El_Gol', 'Tipo', 'Anotador', 'Posicion_Anotador', 'Zona_Porteria', 'Zona_Campo_Origen',
                 'Campo_X', 'Campo_Y', 'N_En_Pista', 'Jugadores_En_Pista_Detalle', 'Excluidos_Dorsales'
-            ].concat(players.map(pl => `#${pl.number} ${pl.name}${pl.posicion ? ' (' + abrevPosicion(pl.posicion) + ')' : ''}`))];
+            ].concat(jugs.map(pl => `#${pl.number} ${pl.name}${pl.posicion ? ' (' + abrevPosicion(pl.posicion) + ')' : ''}`))];
             let ordenGol = 0;
             cron.forEach(e => {
                 const favor = e.tipo === 'GOL' && e.lado === 'home', contra = e.tipo === 'GOL_ENCAJADO';
@@ -3285,7 +3460,7 @@
                     favor ? txt(e.jugador) : '', favor ? txt(e.posicionJugador) : '',
                     txt(e.zonaPorteriaEscrita), txt(e.zonaCampo), num(e.campoX), num(e.campoY),
                     pista ? pista.length : '', detallePista(e), txt(e.excluidos)
-                ].concat(players.map(pl => {
+                ].concat(jugs.map(pl => {
                     if (!pista) return '';
                     if (pista.some(x => (x.id != null ? x.id === pl.id : x.n === pl.number))) return 'Sí';
                     return exc.includes(String(pl.number)) ? 'Excl.' : '';
@@ -3296,11 +3471,11 @@
 
             /* 9c. POSICIONES: rendimiento por posición de juego */
             const nombresPos = posiciones.map(x => x.n);
-            players.forEach(pl => { if (pl.posicion && !nombresPos.includes(pl.posicion)) nombresPos.push(pl.posicion); });
+            jugs.forEach(pl => { if (pl.posicion && !nombresPos.includes(pl.posicion)) nombresPos.push(pl.posicion); });
             nombresPos.push('');
             const filasPo = [['Posicion', 'Abreviatura', 'N_Jugadores', 'Jugadores', 'Segundos_En_Pista_Total', 'Goles', 'Asistencias', 'Fallos', 'Lanzamientos', 'Acierto_Lanzamiento']];
             nombresPos.forEach(pn => {
-                const jug = players.filter(pl => (pl.posicion || '') === pn);
+                const jug = jugs.filter(pl => (pl.posicion || '') === pn);
                 const ev = cron.filter(e => e.lado === 'home' && ['GOL', 'ASISTENCIA', 'FALLO'].includes(e.tipo) && (e.posicionJugador || (players.find(x => x.id === e.jugadorId) || {}).posicion || '') === pn);
                 const g = ev.filter(e => e.tipo === 'GOL').length, f = ev.filter(e => e.tipo === 'FALLO').length;
                 if (jug.length === 0 && ev.length === 0) return;
@@ -3425,10 +3600,12 @@
            ===================================================================== */
         function resetMatch() {
             if (confirm('¿Reiniciar marcador, temporizador y lista de eventos?')) {
+                const habiaPartido = eventsLog.length > 0 || seconds > 0;       // si ya se había jugado, la próxima convocatoria empieza de cero (todos visibles)
                 eventsLog = []; homeGoals = 0; awayGoals = 0; seconds = 0;
                 timeoutsHome = MAX_TIEMPOS_MUERTOS; timeoutsAway = MAX_TIEMPOS_MUERTOS;
                 limpiarTirosMapa();
                 players = players.filter(p => !p.inactivo);
+                if (habiaPartido) players.forEach(p => { delete p.oculto; });
                 players.forEach(p => { p.totalSeconds = 0; p.attacksCount = 0; p.exclusionSeconds = 0; p.segundosExcluido = 0; });
                 if (timerInterval) rebasarCronometro();
                 ataqueEnCurso = false;
