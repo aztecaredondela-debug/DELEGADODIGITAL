@@ -217,6 +217,16 @@
         .btn-zona { background: #090d16; color: #fff; border: 1px solid var(--border-color); border-radius: 4px; padding: 10px 2px; font-size: 0.7rem; font-weight: 800; cursor: pointer; transition: 0.1s; }
         .btn-zona:active { background: var(--accent-red); }
         .btn-zona.sel-excl { border-color: var(--accent-gold); }
+        /* Selector de equipos guardados con pulsación larga para eliminar */
+        .plantilla-btn { width: 110px; padding: 2px 4px; font-size: 0.65rem; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+        .plantilla-panel { display: none; position: fixed; z-index: 5000; min-width: 190px; max-width: 92vw; max-height: 55vh; overflow-y: auto; background: var(--panel-bg); border: 2px solid var(--border-color); border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.6); }
+        .plantilla-panel.open { display: block; }
+        .plantilla-hint { font-size: 0.6rem; color: var(--text-muted); padding: 6px 8px; border-bottom: 1px solid var(--border-color); }
+        .plantilla-item { position: relative; overflow: hidden; padding: 11px 8px; font-size: 0.78rem; font-weight: 700; border-bottom: 1px solid var(--border-color); cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: pan-y; }
+        .plantilla-item.activa { color: var(--accent-gold); }
+        .plantilla-item .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgba(220,38,38,.55); pointer-events: none; }
+        .plantilla-item.pulsando .fill { width: 100%; transition: width 3s linear; }
+        .plantilla-item span.txt { position: relative; }
     
 
         /* ===== POSICIONES Y JUGADORES EN PISTA ===== */
@@ -312,7 +322,11 @@
                             <button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-title-plantilla')" title="Ajustar tamaño de texto">🔍📏</button>
                         </span>
                         <!-- NUEVO SELECTOR DE EQUIPOS / PLANTILLAS -->
-                        <select id="select-equipo-plantilla" class="form-control" style="padding: 2px 4px; font-size: 0.65rem; width: 110px;" onchange="cambiarPlantillaEquipo(this.value)" title="Seleccionar equipo guardado"></select>
+                        <span id="plantilla-wrap">
+                            <button type="button" class="form-control plantilla-btn" id="btn-equipo-plantilla" onclick="togglePanelPlantillas(event)" title="Equipos guardados · mantén pulsado 3 s un equipo para eliminarlo">-- Mis Equipos --</button>
+                            <div class="plantilla-panel" id="panel-plantillas"></div>
+                            <select id="select-equipo-plantilla" style="display:none;" onchange="cambiarPlantillaEquipo(this.value)"></select>
+                        </span>
                     </div>
                     <div style="display: flex; gap: 2px;">
                         <button class="btn btn-purple btn-sm solo-gestion" id="btn-editar-posiciones" onclick="editarPosiciones()" title="Editar la lista de posiciones (extremos, primera línea, los tres...)">📍 Posiciones</button>
@@ -1055,6 +1069,7 @@
 
             cargarPlantillasGuardadasSelector();
             document.getElementById('select-equipo-plantilla').value = nombreEquipo.trim();
+            actualizarEtiquetaPlantilla();
             alert(`¡Plantilla "${nombreEquipo.trim()}" guardada con éxito!`);
         }
 
@@ -1062,6 +1077,7 @@
             const select = document.getElementById('select-equipo-plantilla');
             if (!select) return;
             const plantillas = leerJSON('sar_equipos_guardados', {});
+            const previo = select.value;
             select.innerHTML = '<option value="">-- Mis Equipos --</option>';
             for (const nombre in plantillas) {
                 const opt = document.createElement('option');
@@ -1069,6 +1085,82 @@
                 opt.innerText = nombre;
                 select.appendChild(opt);
             }
+            if (previo && plantillas[previo]) select.value = previo;
+            actualizarEtiquetaPlantilla();
+        }
+
+        /* ---- Equipos guardados: lista propia; pulsación larga (3 s) sobre un equipo = eliminarlo ---- */
+        function actualizarEtiquetaPlantilla() {
+            const b = document.getElementById('btn-equipo-plantilla'), sel = document.getElementById('select-equipo-plantilla');
+            if (b && sel) b.textContent = sel.value || '-- Mis Equipos --';
+        }
+        function cerrarPanelPlantillas() { const pn = document.getElementById('panel-plantillas'); if (pn) pn.classList.remove('open'); }
+        function togglePanelPlantillas(ev) {
+            if (ev) ev.stopPropagation();
+            const pn = document.getElementById('panel-plantillas'), b = document.getElementById('btn-equipo-plantilla');
+            if (pn.classList.contains('open')) return cerrarPanelPlantillas();
+            renderPanelPlantillas();
+            const r = b.getBoundingClientRect();
+            pn.style.top = (r.bottom + 2) + 'px';
+            pn.classList.add('open');
+            pn.style.left = Math.max(4, Math.min(r.left, window.innerWidth - pn.offsetWidth - 4)) + 'px';
+        }
+        document.addEventListener('pointerdown', e => { if (!e.target.closest || !e.target.closest('#plantilla-wrap')) cerrarPanelPlantillas(); });
+
+        function renderPanelPlantillas() {
+            const pn = document.getElementById('panel-plantillas');
+            const actual = document.getElementById('select-equipo-plantilla').value;
+            const plantillas = leerJSON('sar_equipos_guardados', {});
+            pn.innerHTML = '<div class="plantilla-hint">Toca para cargar · mantén pulsado 3 s para eliminar</div>';
+            const nombres = Object.keys(plantillas);
+            if (!nombres.length) { pn.innerHTML += '<div class="plantilla-hint" style="border:0;">Aún no hay equipos guardados (usa 💾 Guardar).</div>'; return; }
+            nombres.forEach(nombre => {
+                const it = document.createElement('div');
+                it.className = 'plantilla-item' + (nombre === actual ? ' activa' : '');
+                const n = Array.isArray(plantillas[nombre]) ? plantillas[nombre].length : 0;
+                it.innerHTML = `<span class="fill"></span><span class="txt">${escaparHTML(nombre)} <span style="font-weight:500; color:var(--text-muted); font-size:0.62rem;">· ${n} jug.</span></span>`;
+                let timer = null, largo = false, x0 = 0, y0 = 0;
+                const cancelar = () => { clearTimeout(timer); timer = null; it.classList.remove('pulsando'); };
+                it.addEventListener('pointerdown', e => {
+                    if (e.button > 0) return;
+                    largo = false; x0 = e.clientX; y0 = e.clientY;
+                    it.classList.add('pulsando');
+                    timer = setTimeout(() => {
+                        timer = null; largo = true; it.classList.remove('pulsando');
+                        if (navigator.vibrate) navigator.vibrate(60);
+                        eliminarPlantillaGuardada(nombre);
+                    }, 3000);
+                });
+                it.addEventListener('pointermove', e => { if (timer && Math.hypot(e.clientX - x0, e.clientY - y0) > 12) cancelar(); });
+                it.addEventListener('pointerleave', cancelar);
+                it.addEventListener('pointercancel', cancelar);
+                it.addEventListener('pointerup', () => {
+                    if (largo) { largo = false; return; }
+                    if (timer) { cancelar(); seleccionarPlantillaDesdePanel(nombre); }
+                });
+                it.addEventListener('contextmenu', e => e.preventDefault());
+                pn.appendChild(it);
+            });
+        }
+
+        function seleccionarPlantillaDesdePanel(nombre) {
+            const sel = document.getElementById('select-equipo-plantilla');
+            sel.value = nombre;
+            cerrarPanelPlantillas();
+            cambiarPlantillaEquipo(nombre);     // si hay partido en marcha, avisa y deja el selector en blanco
+            actualizarEtiquetaPlantilla();
+        }
+
+        function eliminarPlantillaGuardada(nombre) {
+            if (!confirm(`¿Eliminar el equipo "${nombre}" de Mis Equipos?\n\nSe borra solo la plantilla guardada. Los jugadores que tienes ahora en pantalla y los partidos guardados en la carpeta no se tocan.`)) { renderPanelPlantillas(); return; }
+            const plantillas = leerJSON('sar_equipos_guardados', {});
+            delete plantillas[nombre];
+            if (!escribirJSON('sar_equipos_guardados', plantillas)) { alert('No se pudo eliminar el equipo.'); return; }
+            const sel = document.getElementById('select-equipo-plantilla');
+            if (sel.value === nombre) sel.value = '';
+            cargarPlantillasGuardadasSelector();
+            renderPanelPlantillas();
+            mostrarToastRapido(`🗑 Equipo "${escaparHTML(nombre)}" eliminado`, 2200);
         }
 
         function cambiarPlantillaEquipo(nombreEquipo) {
@@ -1077,6 +1169,7 @@
                 alert('Hay un partido en marcha, así que no se puede cambiar de plantilla: los datos de los jugadores actuales quedarían sin asignar.\n\nGuarda el partido en la carpeta o reinícialo con el botón 🗑 y vuelve a intentarlo.');
                 const sel = document.getElementById('select-equipo-plantilla');
                 if (sel) sel.value = '';
+                actualizarEtiquetaPlantilla();
                 return;
             }
             const plantillas = leerJSON('sar_equipos_guardados', {});
