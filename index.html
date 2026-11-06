@@ -3,7 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DELEGADO DIGITAL - SAR DATA</title>
+    <meta name="theme-color" content="#090d16">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Delegado Digital">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <title>DELEGADO DIGITAL</title>
     <style>
         :root {
             --bg-dark: #090d16;
@@ -285,8 +292,8 @@
 
     <header>
         <div class="score-container">
-            <span class="editable-title-wrap"><span class="team-label" id="lbl-team-home" onclick="editarNombreEquipo('home')">SAR</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('lbl-team-home')" title="Ajustar tamaño">🔍📏</button></span>
-            <button class="timeout-badge" id="btn-timeout-home" onclick="pedirTiempoMuerto('home')" title="Pedir Tiempo Muerto SAR"><span id="txt-tm-home-label">TM:</span> <span id="count-timeout-home">1</span>/<span class="max-tm">1</span></button>
+            <span class="editable-title-wrap"><span class="team-label" id="lbl-team-home" onclick="editarNombreEquipo('home')">LOCAL</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('lbl-team-home')" title="Ajustar tamaño">🔍📏</button></span>
+            <button class="timeout-badge" id="btn-timeout-home" onclick="pedirTiempoMuerto('home')" title="Pedir Tiempo Muerto (local)"><span id="txt-tm-home-label">TM:</span> <span id="count-timeout-home">1</span>/<span class="max-tm">1</span></button>
             <div class="score-box" id="score-display" onclick="editarMarcadorDirecto()">00 - 00</div>
             <button class="timeout-badge" id="btn-timeout-away" onclick="pedirTiempoMuerto('away')" title="Pedir Tiempo Muerto Rival"><span id="txt-tm-away-label">TM:</span> <span id="count-timeout-away">1</span>/<span class="max-tm">1</span></button>
             <span class="editable-title-wrap"><span class="team-label" id="lbl-team-away" onclick="editarNombreEquipo('away')">RIVAL</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('lbl-team-away')" title="Ajustar tamaño">🔍📏</button></span>
@@ -317,7 +324,7 @@
                 <div class="panel-header" style="border:none; padding-bottom:0px; flex-wrap: wrap; gap: 4px;">
                     <div style="display: flex; align-items: center; gap: 4px;">
                         <span class="editable-title-wrap">
-                            <span id="txt-title-plantilla">Plantilla SAR</span>
+                            <span id="txt-title-plantilla">Plantilla</span>
                             <button class="btn-edit-label" onclick="editarTextoEtiqueta('txt-title-plantilla')" title="Editar etiqueta">✏️</button>
                             <button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-title-plantilla')" title="Ajustar tamaño de texto">🔍📏</button>
                         </span>
@@ -497,7 +504,7 @@
                 </div>
                 <div class="stat-card">
                     <div class="stat-card-val" id="stat-total-goles">0</div>
-                    <div class="stat-card-lbl" id="lbl-stat-goles">Goles (SAR)</div>
+                    <div class="stat-card-lbl" id="lbl-stat-goles">Goles a favor</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-card-val" id="stat-total-asistencias">0</div>
@@ -519,7 +526,7 @@
 
             <div class="analysis-section">
                 <div class="analysis-title">
-                    <span class="editable-title-wrap"><span id="txt-sec-goles-favor">🥅 Zonas de Goles a Favor (SAR)</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-sec-goles-favor')" title="Ajustar tamaño">🔍📏</button></span>
+                    <span class="editable-title-wrap"><span id="txt-sec-goles-favor">🥅 Zonas de Goles a Favor</span><button class="btn-edit-label" onclick="ajustarTamanioElemento('txt-sec-goles-favor')" title="Ajustar tamaño">🔍📏</button></span>
                 </div>
                 <div class="chart-container" id="chart-goles-favor-container">
                     <span style="color:var(--text-muted); font-size:0.7rem;">Sin goles a favor con ubicación aún.</span>
@@ -650,7 +657,7 @@
             
             <div style="font-size:0.62rem; color:#94a3b8; margin-bottom:6px;">Los tiros marcados aquí son solo de ubicación: no suman goles ni estadísticas de jugador. Para eso usa el panel principal.</div>
             <div style="margin-bottom: 8px; display: flex; justify-content: center; gap: 12px; font-size: 0.75rem; align-items: center;">
-                <label style="cursor: pointer; font-weight: bold; color: var(--accent-green);"><input type="radio" name="equipo-ex" value="SAR" checked onchange="actualizarVistaMapaEx()"> SAR</label>
+                <label style="cursor: pointer; font-weight: bold; color: var(--accent-green);"><input type="radio" name="equipo-ex" value="LOCAL" checked onchange="actualizarVistaMapaEx()"> LOCAL</label>
                 <label style="cursor: pointer; font-weight: bold; color: var(--accent-red);"><input type="radio" name="equipo-ex" value="RIVAL" onchange="actualizarVistaMapaEx()"> Rival</label>
                 
                 <select id="resultado-ex" style="padding: 3px; background: #1e293b; color: #fff; border: 1px solid #334155; border-radius: 4px; font-size: 0.75rem;">
@@ -670,7 +677,7 @@
 
             <!-- PANEL DE ESTADÍSTICAS Y DENSIDAD POR ZONAS TÁCTICAS -->
             <div id="panel-stats-globales-ex" style="margin-top: 10px; background: #090d16; border: 1px solid #334155; border-radius: 6px; padding: 8px; text-align: left; font-size: 0.7rem;">
-                <div style="font-weight: 800; color: var(--accent-gold); margin-bottom: 4px; text-align: center; text-transform: uppercase;" id="titulo-panel-zonas-activo">📊 Concentración y Densidad de Tiros (SAR)</div>
+                <div style="font-weight: 800; color: var(--accent-gold); margin-bottom: 4px; text-align: center; text-transform: uppercase;" id="titulo-panel-zonas-activo">📊 Concentración y Densidad de Tiros (mi equipo)</div>
                 <div id="stats-zonas-equipo-activo" style="background: #131c2e; padding: 6px; border-radius: 4px;">
                     <span style="color: var(--text-muted);">Sin datos</span>
                 </div>
@@ -685,6 +692,17 @@
 
     <!-- Array global de tiros del mapa flotante (se reasigna al cargar o reiniciar un partido) -->
     <script>
+        /* Migración única: copia los datos guardados con el prefijo antiguo al nuevo */
+        (function () {
+            try {
+                Object.keys(localStorage).filter(k => k.indexOf('sar_') === 0).forEach(k => {
+                    const nk = 'dd_' + k.slice(4);
+                    if (localStorage.getItem(nk) === null) localStorage.setItem(nk, localStorage.getItem(k));
+                });
+            } catch (e) {}
+        })();
+    </script>
+    <script>
         let tirosEx = [];
     </script>
 
@@ -697,7 +715,7 @@
         let timerStartMs = 0, timerStartSeconds = 0;   // el cronómetro se calcula con Date.now() (no se atrasa)
         let ultimoAutoguardado = 0;
         let homeGoals = 0, awayGoals = 0;
-        let homeName = 'SAR', awayName = 'RIVAL';
+        let homeName = 'LOCAL', awayName = 'RIVAL';
         let selectedPlayerId = 1, selectedAction = 'Gol 6m';
         let courtCoords = { x: -20, y: -20 }, goalCoords = { x: -20, y: -20 };
         let eventsLog = [];
@@ -722,7 +740,7 @@
         let coloresPersonalizados = {};
 
         const COORD_VERSION = 2;   // v2 = coordenadas del mapa normalizadas a 300x200
-        const CLAVE_AUTOGUARDADO = 'sar_partido_en_curso';
+        const CLAVE_AUTOGUARDADO = 'dd_partido_en_curso';
         const PICKERS_COLOR = {
             '--bg-dark': 'picker-bg', '--panel-bg': 'picker-panel', '--accent-green': 'picker-green',
             '--accent-red': 'picker-red', '--accent-blue': 'picker-blue', '--accent-gold': 'picker-gold',
@@ -902,15 +920,15 @@
             const nuevoTexto = prompt("Editar texto de etiqueta:", textoActual);
             if (nuevoTexto !== null && nuevoTexto.trim() !== "") {
                 el.innerText = nuevoTexto.trim();
-                const mapa = leerJSON('sar_etiquetas_textos', {});
+                const mapa = leerJSON('dd_etiquetas_textos', {});
                 mapa[idElemento] = nuevoTexto.trim();
-                escribirJSON('sar_etiquetas_textos', mapa);     // las etiquetas editadas ahora SÍ persisten
+                escribirJSON('dd_etiquetas_textos', mapa);     // las etiquetas editadas ahora SÍ persisten
                 guardarConfigLocal();
             }
         }
 
         function aplicarEtiquetasGuardadas() {
-            const mapa = leerJSON('sar_etiquetas_textos', {});
+            const mapa = leerJSON('dd_etiquetas_textos', {});
             for (const [id, texto] of Object.entries(mapa)) {
                 const el = document.getElementById(id);
                 if (el && typeof texto === 'string') el.innerText = texto;
@@ -918,7 +936,7 @@
         }
 
         function etiquetaBase(id, porDefecto) {
-            const mapa = leerJSON('sar_etiquetas_textos', {});
+            const mapa = leerJSON('dd_etiquetas_textos', {});
             return (typeof mapa[id] === 'string' && mapa[id]) ? mapa[id] : porDefecto;
         }
 
@@ -929,14 +947,14 @@
             const nuevoTamanio = prompt(`Introduce el tamaño de texto deseado para "${el.innerText}" (ej. 16px, 1.2rem, 20px):`, tamanioActual);
             if (nuevoTamanio !== null && nuevoTamanio.trim() !== "") {
                 el.style.fontSize = nuevoTamanio.trim();
-                const tamaniosMap = leerJSON('sar_tamanios_textos', {});
+                const tamaniosMap = leerJSON('dd_tamanios_textos', {});
                 tamaniosMap[idElemento] = nuevoTamanio.trim();
-                escribirJSON('sar_tamanios_textos', tamaniosMap);
+                escribirJSON('dd_tamanios_textos', tamaniosMap);
             }
         }
 
         function aplicarTamaniosGuardados() {
-            const tamaniosMap = leerJSON('sar_tamanios_textos', {});
+            const tamaniosMap = leerJSON('dd_tamanios_textos', {});
             for (const [id, size] of Object.entries(tamaniosMap)) {
                 const el = document.getElementById(id);
                 if (el) el.style.fontSize = size;
@@ -978,7 +996,7 @@
         let _cfgTimer = null;
         function guardarConfigLocal() { clearTimeout(_cfgTimer); _cfgTimer = setTimeout(() => { _cfgTimer = null; guardarConfigLocalYa(); }, 300); }
         function guardarConfigLocalYa() {
-            escribirJSON('sar_delegado_config', {
+            escribirJSON('dd_delegado_config', {
                 actions: actions, players: players,
                 colores: coloresPersonalizados, homeName: homeName, awayName: awayName, posiciones: posiciones
             });
@@ -1037,7 +1055,7 @@
         }
 
         function cargarConfigLocal() {
-            const cfg = leerJSON('sar_delegado_config', null);
+            const cfg = leerJSON('dd_delegado_config', null);
             if (!cfg || typeof cfg !== 'object') return;
             { const sa = sanearAcciones(cfg.actions); if (sa.length > 0) actions = sa; }
             if (Array.isArray(cfg.players)) players = normalizarJugadores(cfg.players);
@@ -1058,14 +1076,14 @@
            PLANTILLAS / CARPETA
            ===================================================================== */
         function guardarPlantillaActual() {
-            const nombreEquipo = prompt('Nombre para este equipo / plantilla:', 'SAR Senior A');
+            const nombreEquipo = prompt('Nombre para este equipo / plantilla:', 'Equipo A');
             if (!nombreEquipo || nombreEquipo.trim() === '') return;
 
-            const plantillas = leerJSON('sar_equipos_guardados', {});
+            const plantillas = leerJSON('dd_equipos_guardados', {});
             // Se guardan los contadores a cero: una plantilla no debe arrastrar los minutos de otro partido
             if (plantillas[nombreEquipo.trim()] && !confirm(`Ya existe la plantilla "${nombreEquipo.trim()}". ¿Sobrescribirla?`)) return;
             plantillas[nombreEquipo.trim()] = players.filter(p => !p.inactivo).map(p => { const c = { ...p, totalSeconds: 0, attacksCount: 0, exclusionSeconds: 0, segundosExcluido: 0 }; delete c.oculto; return c; });   // la plantilla guarda a TODOS (la convocatoria es solo de un partido)
-            if (!escribirJSON('sar_equipos_guardados', plantillas)) { alert('No se pudo guardar: almacenamiento lleno.'); return; }
+            if (!escribirJSON('dd_equipos_guardados', plantillas)) { alert('No se pudo guardar: almacenamiento lleno.'); return; }
 
             cargarPlantillasGuardadasSelector();
             document.getElementById('select-equipo-plantilla').value = nombreEquipo.trim();
@@ -1076,7 +1094,7 @@
         function cargarPlantillasGuardadasSelector() {
             const select = document.getElementById('select-equipo-plantilla');
             if (!select) return;
-            const plantillas = leerJSON('sar_equipos_guardados', {});
+            const plantillas = leerJSON('dd_equipos_guardados', {});
             const previo = select.value;
             select.innerHTML = '<option value="">-- Mis Equipos --</option>';
             for (const nombre in plantillas) {
@@ -1110,7 +1128,7 @@
         function renderPanelPlantillas() {
             const pn = document.getElementById('panel-plantillas');
             const actual = document.getElementById('select-equipo-plantilla').value;
-            const plantillas = leerJSON('sar_equipos_guardados', {});
+            const plantillas = leerJSON('dd_equipos_guardados', {});
             pn.innerHTML = '<div class="plantilla-hint">Toca para cargar · mantén pulsado 3 s para eliminar</div>';
             const nombres = Object.keys(plantillas);
             if (!nombres.length) { pn.innerHTML += '<div class="plantilla-hint" style="border:0;">Aún no hay equipos guardados (usa 💾 Guardar).</div>'; return; }
@@ -1153,9 +1171,9 @@
 
         function eliminarPlantillaGuardada(nombre) {
             if (!confirm(`¿Eliminar el equipo "${nombre}" de Mis Equipos?\n\nSe borra solo la plantilla guardada. Los jugadores que tienes ahora en pantalla y los partidos guardados en la carpeta no se tocan.`)) { renderPanelPlantillas(); return; }
-            const plantillas = leerJSON('sar_equipos_guardados', {});
+            const plantillas = leerJSON('dd_equipos_guardados', {});
             delete plantillas[nombre];
-            if (!escribirJSON('sar_equipos_guardados', plantillas)) { alert('No se pudo eliminar el equipo.'); return; }
+            if (!escribirJSON('dd_equipos_guardados', plantillas)) { alert('No se pudo eliminar el equipo.'); return; }
             const sel = document.getElementById('select-equipo-plantilla');
             if (sel.value === nombre) sel.value = '';
             cargarPlantillasGuardadasSelector();
@@ -1172,7 +1190,7 @@
                 actualizarEtiquetaPlantilla();
                 return;
             }
-            const plantillas = leerJSON('sar_equipos_guardados', {});
+            const plantillas = leerJSON('dd_equipos_guardados', {});
             if (plantillas[nombreEquipo]) {
                 players = normalizarJugadores(JSON.parse(JSON.stringify(plantillas[nombreEquipo])));
                 renderRoster();
@@ -1183,7 +1201,7 @@
             const nombrePersonalizado = prompt('Nombre para guardar esta configuración:', 'Configuración ' + new Date().toLocaleDateString());
             if (!nombrePersonalizado) return;
 
-            const carpeta = leerJSON('sar_carpeta_guardados', []);
+            const carpeta = leerJSON('dd_carpeta_guardados', []);
             carpeta.unshift({
                 id: 'cfg_' + Date.now(),
                 tipo: 'Configuración',
@@ -1192,10 +1210,10 @@
                 fechaISO: new Date().toISOString(),
                 data: {
                     actions: actions, players: players.map(p => { const c = { ...p }; delete c.oculto; return c; }), colores: coloresPersonalizados, posiciones: posiciones,
-                    tamaniosTextos: leerCrudo('sar_tamanios_textos'), etiquetasTextos: leerCrudo('sar_etiquetas_textos')
+                    tamaniosTextos: leerCrudo('dd_tamanios_textos'), etiquetasTextos: leerCrudo('dd_etiquetas_textos')
                 }
             });
-            if (!escribirJSON('sar_carpeta_guardados', carpeta)) { alert('No se pudo guardar: almacenamiento lleno.'); return; }
+            if (!escribirJSON('dd_carpeta_guardados', carpeta)) { alert('No se pudo guardar: almacenamiento lleno.'); return; }
             actualizarCarpetaVisual();
             alert('¡Configuración guardada en la carpeta correctamente!');
         }
@@ -1223,8 +1241,8 @@
                 actions: actions,
                 colores: coloresPersonalizados,
                 posiciones: posiciones,
-                tamaniosTextos: leerCrudo('sar_tamanios_textos'),
-                etiquetasTextos: leerCrudo('sar_etiquetas_textos'),
+                tamaniosTextos: leerCrudo('dd_tamanios_textos'),
+                etiquetasTextos: leerCrudo('dd_etiquetas_textos'),
                 coordVersion: COORD_VERSION,
                 ataqueNumero: ataqueNumero,
                 tirosEx: tirosEx.map(t => ({ x: t.x, y: t.y, equipo: t.equipo, resultado: t.resultado, eventId: t.eventId || null }))
@@ -1235,7 +1253,7 @@
             const nombrePersonalizado = prompt('Nombre para este partido:', `${homeName} vs ${awayName} (${new Date().toLocaleDateString()})`);
             if (!nombrePersonalizado) return;
 
-            const carpeta = leerJSON('sar_carpeta_guardados', []);
+            const carpeta = leerJSON('dd_carpeta_guardados', []);
             carpeta.unshift({
                 id: 'match_' + Date.now(),
                 tipo: 'Partido',
@@ -1244,7 +1262,7 @@
                 fechaISO: new Date().toISOString(),
                 data: JSON.parse(JSON.stringify(datosPartidoActuales()))
             });
-            if (!escribirJSON('sar_carpeta_guardados', carpeta)) { alert('No se pudo guardar: almacenamiento lleno.'); return; }
+            if (!escribirJSON('dd_carpeta_guardados', carpeta)) { alert('No se pudo guardar: almacenamiento lleno.'); return; }
             actualizarCarpetaVisual();
             alert('¡Datos del partido guardados en la carpeta correctamente!');
         }
@@ -1253,7 +1271,7 @@
             const container = document.getElementById('folder-items-container');
             if (!container) return;
 
-            const carpeta = leerJSON('sar_carpeta_guardados', []);
+            const carpeta = leerJSON('dd_carpeta_guardados', []);
             container.innerHTML = '';
 
             if (carpeta.length === 0) {
@@ -1281,18 +1299,18 @@
         }
 
         function cargarItemCarpeta(id) {
-            const carpeta = leerJSON('sar_carpeta_guardados', []);
+            const carpeta = leerJSON('dd_carpeta_guardados', []);
             const item = carpeta.find(x => x.id === id);
             if (!item) return;
             if (item.tipo === 'Configuración' && (eventsLog.length > 0 || seconds > 0)) { alert('Hay un partido en marcha, así que no se puede cargar una configuración: los datos de los jugadores actuales quedarían sin asignar.\n\nGuarda el partido en la carpeta o reinícialo con el botón 🗑 y vuelve a intentarlo.'); return; }
 
             if (confirm(`¿Estás seguro de cargar "${item.nombre}"?`)) {
                 if (item.data && item.data.tamaniosTextos) {
-                    try { localStorage.setItem('sar_tamanios_textos', item.data.tamaniosTextos); } catch (e) {}
+                    try { localStorage.setItem('dd_tamanios_textos', item.data.tamaniosTextos); } catch (e) {}
                     aplicarTamaniosGuardados();
                 }
                 if (item.data && item.data.etiquetasTextos) {
-                    try { localStorage.setItem('sar_etiquetas_textos', item.data.etiquetasTextos); } catch (e) {}
+                    try { localStorage.setItem('dd_etiquetas_textos', item.data.etiquetasTextos); } catch (e) {}
                     aplicarEtiquetasGuardadas();
                 }
                 if (item.data && item.data.colores && typeof item.data.colores === 'object') {
@@ -1319,20 +1337,20 @@
 
         function eliminarItemCarpeta(id) {
             if (confirm('¿Eliminar este elemento de la carpeta?')) {
-                let carpeta = leerJSON('sar_carpeta_guardados', []);
+                let carpeta = leerJSON('dd_carpeta_guardados', []);
                 carpeta = carpeta.filter(x => x.id !== id);
-                escribirJSON('sar_carpeta_guardados', carpeta);
+                escribirJSON('dd_carpeta_guardados', carpeta);
                 actualizarCarpetaVisual();
             }
         }
 
         function exportarConfigJSON() {
             guardarConfigLocalYa();
-            const cfg = leerJSON('sar_delegado_config', {});
+            const cfg = leerJSON('dd_delegado_config', {});
             if (Array.isArray(cfg.players)) cfg.players = cfg.players.map(p => { const c = { ...p }; delete c.oculto; return c; });
-            cfg.etiquetasTextos = leerJSON('sar_etiquetas_textos', {});      // ahora la exportación incluye etiquetas y tamaños de texto
-            cfg.tamaniosTextos = leerJSON('sar_tamanios_textos', {});
-            descargarBlob(new Blob([JSON.stringify(cfg)], { type: 'application/json' }), 'sar_delegado_config.json');
+            cfg.etiquetasTextos = leerJSON('dd_etiquetas_textos', {});      // ahora la exportación incluye etiquetas y tamaños de texto
+            cfg.tamaniosTextos = leerJSON('dd_tamanios_textos', {});
+            descargarBlob(new Blob([JSON.stringify(cfg)], { type: 'application/json' }), 'delegado_config.json');
         }
 
         function importarConfigJSON() {
@@ -1354,9 +1372,9 @@
                             posiciones: sanearPosiciones(parsed.posiciones)
                         };
                         if (!limpio.players.length) delete limpio.players;
-                        if (!escribirJSON('sar_delegado_config', limpio)) throw new Error('almacenamiento');
-                        if (parsed.etiquetasTextos && typeof parsed.etiquetasTextos === 'object') { escribirJSON('sar_etiquetas_textos', parsed.etiquetasTextos); aplicarEtiquetasGuardadas(); }
-                        if (parsed.tamaniosTextos && typeof parsed.tamaniosTextos === 'object') { escribirJSON('sar_tamanios_textos', parsed.tamaniosTextos); aplicarTamaniosGuardados(); }
+                        if (!escribirJSON('dd_delegado_config', limpio)) throw new Error('almacenamiento');
+                        if (parsed.etiquetasTextos && typeof parsed.etiquetasTextos === 'object') { escribirJSON('dd_etiquetas_textos', parsed.etiquetasTextos); aplicarEtiquetasGuardadas(); }
+                        if (parsed.tamaniosTextos && typeof parsed.tamaniosTextos === 'object') { escribirJSON('dd_tamanios_textos', parsed.tamaniosTextos); aplicarTamaniosGuardados(); }
                         cargarConfigLocal();
                         alert('¡Configuración importada correctamente!');
                     } catch (err) { alert('Error al importar el archivo JSON'); }
@@ -1676,7 +1694,7 @@
         }
 
         function cargarMaxTiemposMuertos() {
-            const v = parseInt(leerCrudo('sar_max_tm'), 10);
+            const v = parseInt(leerCrudo('dd_max_tm'), 10);
             if (Number.isFinite(v) && v >= 1 && v <= 10) MAX_TIEMPOS_MUERTOS = v;
             timeoutsHome = MAX_TIEMPOS_MUERTOS; timeoutsAway = MAX_TIEMPOS_MUERTOS;
         }
@@ -1689,7 +1707,7 @@
             const usadosH = MAX_TIEMPOS_MUERTOS - timeoutsHome, usadosA = MAX_TIEMPOS_MUERTOS - timeoutsAway;
             MAX_TIEMPOS_MUERTOS = v;
             timeoutsHome = Math.max(0, v - usadosH); timeoutsAway = Math.max(0, v - usadosA);
-            try { localStorage.setItem('sar_max_tm', String(v)); } catch (e) {}
+            try { localStorage.setItem('dd_max_tm', String(v)); } catch (e) {}
             actualizarTimeoutsUI();
             autoguardarPartido();
         }
@@ -1890,7 +1908,7 @@
         function cambiarParte() {
             if (parte >= 3) { alert('Ya estás en la prórroga.'); return; }
             const sig = parte + 1;
-            const txt = prompt(`Pasar a ${sig === 2 ? 'la 2ª parte' : 'la prórroga'}. Minuto del reloj en el que empieza:`, sig === 2 ? '30' : '60');
+            const txt = prompt(`Pasar a ${sig === 2 ? 'la 2ª parte' : 'la prórroga'}. Minuto del reloj en el que empieza:`, sig === 2 ? String(window.PARTE_MIN || 30) : String((window.PARTE_MIN || 30) * 2));
             if (txt === null) return;
             const min = parseInt(txt, 10);
             if (!Number.isFinite(min) || min < 0) { alert('Minuto no válido.'); return; }
@@ -2082,7 +2100,7 @@
            MODO RÁPIDO
            ===================================================================== */
         function cargarModoRapido() {
-            const v = leerCrudo('sar_modo_rapido');
+            const v = leerCrudo('dd_modo_rapido');
             modoRapido = (v === null) ? true : v === '1';
             pintarModoRapido();
         }
@@ -2098,7 +2116,7 @@
 
         function toggleModoRapido() {
             modoRapido = !modoRapido;
-            try { localStorage.setItem('sar_modo_rapido', modoRapido ? '1' : '0'); } catch (e) {}
+            try { localStorage.setItem('dd_modo_rapido', modoRapido ? '1' : '0'); } catch (e) {}
             cancelarPendientesRapidos();
             pintarModoRapido();
             mostrarToastRapido(modoRapido
@@ -2843,7 +2861,7 @@
         function aplicarDatosPartido(data) {
             if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }      // al cargar otro partido el reloj no sigue corriendo
             parte = [1, 2, 3].includes(Number(data.parte)) ? Number(data.parte) : 1;
-            homeName = String(data.homeName || 'SAR').slice(0, 40);
+            homeName = String(data.homeName || 'LOCAL').slice(0, 40);
             awayName = String(data.awayName || 'RIVAL').slice(0, 40);
             homeGoals = Math.max(0, Number(data.homeGoals) || 0);
             awayGoals = Math.max(0, Number(data.awayGoals) || 0);
@@ -2865,7 +2883,7 @@
             limpiarTirosMapa();
             const lista = (Array.isArray(data.tirosEx) ? data.tirosEx : [])
                 .filter(t => t && Number.isFinite(Number(t.x)) && Number.isFinite(Number(t.y)))
-                .map(t => ({ ...t, x: Number(t.x), y: Number(t.y), equipo: t.equipo === 'RIVAL' ? 'RIVAL' : 'SAR',
+                .map(t => ({ ...t, x: Number(t.x), y: Number(t.y), equipo: t.equipo === 'RIVAL' ? 'RIVAL' : 'LOCAL',
                     resultado: ['gol', 'paradon', 'fuera'].includes(t.resultado) ? t.resultado : 'fuera', eventId: t.eventId ? Number(t.eventId) : null }));
             if (data.coordVersion !== COORD_VERSION) convertirCoordMapaLegacy(lista, eventsLog);
             eventsLog.forEach(normalizarEvento);
@@ -2947,7 +2965,7 @@
         function recuperarPartidoAutoguardado() {
             const d = leerJSON(CLAVE_AUTOGUARDADO, null);
             if (!d || !((d.eventsLog && d.eventsLog.length) || d.seconds > 0)) return false;
-            const resumen = `${d.homeName || 'SAR'} ${d.homeGoals || 0} - ${d.awayGoals || 0} ${d.awayName || 'RIVAL'} (${formatearSegundos(d.seconds || 0)})`;
+            const resumen = `${d.homeName || 'LOCAL'} ${d.homeGoals || 0} - ${d.awayGoals || 0} ${d.awayName || 'RIVAL'} (${formatearSegundos(d.seconds || 0)})`;
             if (confirm(`Se encontró un partido en curso sin cerrar:\n${resumen}\n\n¿Quieres recuperarlo?`)) {
                 aplicarDatosPartido(d);
                 return true;
@@ -3668,11 +3686,11 @@
                15. CONFIGURACIÓN (etiquetas, tamaños, colores, plantillas, carpeta)
                --------------------------------------------------------------- */
             const filasCf = [[N('ETIQUETAS EDITADAS')], [H('ID_Elemento'), H('Texto_Actual')]];
-            const etiquetas = leerJSON('sar_etiquetas_textos', {});
+            const etiquetas = leerJSON('dd_etiquetas_textos', {});
             Object.entries(etiquetas).forEach(([k, v]) => filasCf.push([k, v]));
             if (Object.keys(etiquetas).length === 0) filasCf.push(['(ninguna)', '']);
             filasCf.push([], [N('TAMAÑOS DE TEXTO PERSONALIZADOS')], [H('ID_Elemento'), H('Tamaño')]);
-            const tamanios = leerJSON('sar_tamanios_textos', {});
+            const tamanios = leerJSON('dd_tamanios_textos', {});
             Object.entries(tamanios).forEach(([k, v]) => filasCf.push([k, v]));
             if (Object.keys(tamanios).length === 0) filasCf.push(['(ninguno)', '']);
             filasCf.push([], [N('PALETA DE COLORES')], [H('Variable'), H('Valor')]);
@@ -3683,11 +3701,11 @@
             filasCf.push([], [N('POSICIONES DE JUEGO')], [H('Posicion'), H('Abreviatura')]);
             posiciones.forEach(x => filasCf.push([x.n, x.a]));
             filasCf.push([], [N('PLANTILLAS GUARDADAS')], [H('Nombre'), H('Jugadores')]);
-            const plantillas = leerJSON('sar_equipos_guardados', {});
+            const plantillas = leerJSON('dd_equipos_guardados', {});
             Object.entries(plantillas).forEach(([k, v]) => filasCf.push([k, Array.isArray(v) ? v.length : '']));
             if (Object.keys(plantillas).length === 0) filasCf.push(['(ninguna)', '']);
             filasCf.push([], [N('CARPETA DE PARTIDOS Y CONFIGURACIONES')], [H('Tipo'), H('Nombre'), H('Fecha')]);
-            const carpeta = leerJSON('sar_carpeta_guardados', []);
+            const carpeta = leerJSON('dd_carpeta_guardados', []);
             carpeta.forEach(it => filasCf.push([it.tipo, it.nombre, it.fecha]));
             if (carpeta.length === 0) filasCf.push(['(vacía)', '', '']);
             hojas.push({ nombre: 'Configuracion', cabecera: false, filas: filasCf });
@@ -3761,7 +3779,7 @@
         function actualizarVistaMapaEx() {
             const radioSel = document.querySelector('input[name="equipo-ex"]:checked');
             if (!radioSel) return;
-            const equipoSeleccionado = radioSel.value;                       // 'SAR' | 'RIVAL'
+            const equipoSeleccionado = radioSel.value;                       // 'LOCAL' | 'RIVAL'
             const lado = equipoSeleccionado === 'RIVAL' ? 'away' : 'home';
             const tituloZonas = document.getElementById('titulo-panel-zonas-activo');
             if (tituloZonas) {
@@ -3854,7 +3872,7 @@
                     const y = Math.min(200, Math.max(0, Math.round(((e.clientY - rect.top - cancha.clientTop) / h) * 200)));
 
                     const radioSel = document.querySelector('input[name="equipo-ex"]:checked');
-                    const equipo = radioSel ? radioSel.value : 'SAR';
+                    const equipo = radioSel ? radioSel.value : 'LOCAL';
                     const resSel = document.getElementById('resultado-ex');
                     const resultado = resSel ? resSel.value : 'gol';
                     const lado = equipo === 'RIVAL' ? 'away' : 'home';
@@ -3876,7 +3894,7 @@
             if (btnBorrar) {
                 btnBorrar.onclick = function () {
                     const radioSel = document.querySelector('input[name="equipo-ex"]:checked');
-                    const equipoActual = radioSel ? radioSel.value : 'SAR';
+                    const equipoActual = radioSel ? radioSel.value : 'LOCAL';
                     for (let i = tirosEx.length - 1; i >= 0; i--) {
                         if (tirosEx[i].equipo === equipoActual) {
                             const eliminado = tirosEx.splice(i, 1)[0];
@@ -3893,6 +3911,112 @@
                     actualizarVistaMapaEx();
                 };
             }
+        })();
+    </script>
+    <script>
+        /* =====================================================================
+           SELECTOR DE DEPORTE: etiqueta inicial que adapta acciones, posiciones y opciones
+           ===================================================================== */
+        const DEPORTES = {
+            balonmano: { nombre: 'Balonmano', icono: '🤾', exclusion: true, maxTM: 3, parteMin: 30, gol: 'GOL', term: 'Goles',
+                posiciones: [{ n: 'Portero', a: 'POR' }, { n: 'Extremo Izquierdo', a: 'EI' }, { n: 'Extremo Derecho', a: 'ED' }, { n: 'Primera línea (doses)', a: 'PL' }, { n: 'Los tres', a: '3' }, { n: 'Pivote', a: 'PIV' }],
+                acciones: [['attack', 'Gol 6m', 'GOL'], ['attack', 'Gol 9m', 'GOL'], ['attack', 'Gol 7m', 'GOL'], ['attack', 'Gol Contraataque', 'GOL'], ['attack', 'Asistencia', 'ASISTENCIA'], ['attack', 'Fallo / Parada', 'FALLO'], ['defense', 'Parada Portero', 'PARADA_PORTERO'], ['defense', 'Recuperación', 'OTRO'], ['defense', 'Falta Técnica', 'OTRO'], ['defense', 'Exclusión 2m', 'EXCLUSION']] },
+            futsal: { nombre: 'Fútbol sala', icono: '⚽', exclusion: false, maxTM: 1, parteMin: 20, term: 'Goles',
+                posiciones: [{ n: 'Portero', a: 'POR' }, { n: 'Cierre', a: 'CIE' }, { n: 'Ala Izquierdo', a: 'AI' }, { n: 'Ala Derecho', a: 'AD' }, { n: 'Pívot', a: 'PIV' }],
+                acciones: [['attack', 'Gol', 'GOL'], ['attack', 'Asistencia', 'ASISTENCIA'], ['attack', 'Tiro a puerta', 'FALLO'], ['attack', 'Tiro fuera', 'FALLO'], ['attack', 'Pérdida', 'PERDIDA'], ['defense', 'Parada Portero', 'PARADA_PORTERO'], ['defense', 'Recuperación', 'OTRO'], ['defense', 'Falta', 'OTRO'], ['defense', 'Tarjeta', 'OTRO']] },
+            hockey: { nombre: 'Hockey patines', icono: '🏑', exclusion: false, maxTM: 1, parteMin: 25, term: 'Goles',
+                posiciones: [{ n: 'Portero', a: 'POR' }, { n: 'Defensa', a: 'DEF' }, { n: 'Delantero', a: 'DEL' }],
+                acciones: [['attack', 'Gol', 'GOL'], ['attack', 'Asistencia', 'ASISTENCIA'], ['attack', 'Tiro', 'FALLO'], ['attack', 'Pérdida', 'PERDIDA'], ['defense', 'Parada Portero', 'PARADA_PORTERO'], ['defense', 'Recuperación', 'OTRO'], ['defense', 'Falta', 'OTRO']] },
+            otro: { nombre: 'Otro deporte', icono: '🏟', exclusion: false, maxTM: 2, parteMin: 20, term: 'Puntos',
+                posiciones: [{ n: 'Jugador', a: 'JUG' }],
+                acciones: [['attack', 'Punto', 'GOL'], ['attack', 'Asistencia', 'ASISTENCIA'], ['attack', 'Fallo', 'FALLO'], ['attack', 'Pérdida', 'PERDIDA'], ['defense', 'Recuperación', 'OTRO'], ['defense', 'Falta', 'OTRO']] }
+        };
+        const CLAVE_DEPORTE = 'dd_deporte';
+
+        function deporteActual() { const k = leerCrudo(CLAVE_DEPORTE); return DEPORTES[k] ? k : null; }
+
+        function pintarDeporte(k) {
+            const d = DEPORTES[k]; if (!d) return;
+            window.PARTE_MIN = d.parteMin;
+            const ubi = document.getElementById('txt-title-ubicacion'); if (ubi) { const p = ubi.closest('.panel'); if (p) p.style.display = (k === 'otro') ? 'none' : ''; }
+            const ex = document.getElementById('btn-excl-rival-main'); if (ex) ex.style.display = d.exclusion ? '' : 'none';
+            const bg = document.getElementById('btn-gol-rival-main'); if (bg && !leerJSON('dd_etiquetas_textos', {})['btn-gol-rival-main']) bg.firstChild.textContent = (d.term === 'Puntos' ? '⚽ PUNTO RIVAL' : '⚽ GOL RIVAL');
+            const lg = document.getElementById('lbl-stat-goles'); if (lg && !leerJSON('dd_etiquetas_textos', {})['lbl-stat-goles']) lg.textContent = d.term + ' a favor';
+            const b = document.getElementById('btn-deporte'); if (b) b.textContent = d.icono + ' ' + d.nombre;
+        }
+
+        function aplicarDeporte(k, reiniciarConfig) {
+            const d = DEPORTES[k]; if (!d) return;
+            try { localStorage.setItem(CLAVE_DEPORTE, k); } catch (e) {}
+            if (reiniciarConfig) {
+                actions = sanearAcciones(d.acciones.map((a, i) => ({ id: 'p' + i, category: a[0], name: a[1], tipo: a[2] })));
+                posiciones = d.posiciones.map(x => ({ n: x.n, a: x.a }));
+                players.forEach(p => { if (p.posicion && !posiciones.some(x => x.n === p.posicion)) p.posicion = ''; });
+                MAX_TIEMPOS_MUERTOS = d.maxTM; timeoutsHome = d.maxTM; timeoutsAway = d.maxTM;
+                try { localStorage.setItem('dd_max_tm', String(d.maxTM)); } catch (e) {}
+                selectedAction = actions.length ? actions[0].name : '';
+                renderRoster(); renderActions(); actualizarTimeoutsUI(); guardarConfigLocalYa();
+            }
+            pintarDeporte(k);
+        }
+
+        function abrirSelectorDeporte(primeraVez) {
+            const prev = document.getElementById('modal-deporte'); if (prev) prev.remove();
+            const m = document.createElement('div'); m.id = 'modal-deporte';
+            m.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:16px;';
+            const caja = document.createElement('div');
+            caja.style.cssText = 'background:var(--panel-bg);border:1px solid var(--accent-green);border-radius:12px;padding:18px;max-width:440px;width:100%;text-align:center;color:#e2e8f0;';
+            caja.innerHTML = '<h2 style="margin:0 0 6px;color:var(--accent-green)">¿Qué deporte vas a registrar?</h2><p style="margin:0 0 12px;font-size:.9rem;opacity:.8">Se adaptan las acciones, posiciones y opciones. Todo se puede editar después.</p>';
+            Object.keys(DEPORTES).forEach(k => {
+                const bt = document.createElement('button'); bt.className = 'btn'; bt.style.cssText = 'display:block;width:100%;margin:6px 0;padding:12px;font-size:1rem;';
+                bt.textContent = DEPORTES[k].icono + ' ' + DEPORTES[k].nombre;
+                bt.onclick = () => {
+                    if (!primeraVez && k !== deporteActual() && !confirm('Se sustituirán las acciones y posiciones por las de ' + DEPORTES[k].nombre + '. Los partidos guardados no se tocan. ¿Continuar?')) return;
+                    aplicarDeporte(k, !primeraVez || k !== 'balonmano'); m.remove();
+                };
+                caja.appendChild(bt);
+            });
+            if (!primeraVez) { const c = document.createElement('button'); c.className = 'btn'; c.textContent = 'Cancelar'; c.style.marginTop = '8px'; c.onclick = () => m.remove(); caja.appendChild(c); }
+            m.appendChild(caja); document.body.appendChild(m);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const barra = document.querySelector('.top-actions');
+            if (barra) { const b = document.createElement('button'); b.className = 'btn btn-purple'; b.id = 'btn-deporte'; b.textContent = '🏟 Deporte'; b.title = 'Cambiar de deporte'; b.onclick = () => abrirSelectorDeporte(false); barra.insertBefore(b, barra.firstChild); }
+            const k = deporteActual();
+            if (k) pintarDeporte(k); else abrirSelectorDeporte(true);
+        });
+    </script>
+    <script>
+        /* PWA + robustez en pista: instalación, offline, pantalla encendida y datos persistentes */
+        (function () {
+            if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+                window.addEventListener('load', function () {
+                    navigator.serviceWorker.register('sw.js').catch(function (e) { console.warn('SW no registrado:', e); });
+                });
+            }
+            try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+
+            /* Mantener la pantalla encendida mientras el cronómetro corre */
+            let wakeLock = null;
+            async function pedirPantalla() {
+                try {
+                    if (!('wakeLock' in navigator) || wakeLock || document.hidden) return;
+                    if (typeof timerInterval === 'undefined' || !timerInterval) return;
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    wakeLock.addEventListener('release', function () { wakeLock = null; });
+                } catch (e) { wakeLock = null; }
+            }
+            setInterval(function () {
+                if (typeof timerInterval !== 'undefined' && timerInterval) pedirPantalla();
+                else if (wakeLock) { try { wakeLock.release(); } catch (e) {} wakeLock = null; }
+            }, 3000);
+            document.addEventListener('visibilitychange', function () { if (!document.hidden) pedirPantalla(); });
+
+            /* Aviso antes de cerrar la pestaña con el partido en marcha */
+            window.addEventListener('beforeunload', function (e) {
+                if (typeof timerInterval !== 'undefined' && timerInterval) { e.preventDefault(); e.returnValue = ''; }
+            });
         })();
     </script>
 </body>
