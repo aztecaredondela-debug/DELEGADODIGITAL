@@ -1030,6 +1030,7 @@
                 nombres.add(name);
                 const o = { id: String(a.id || ('act_' + Date.now() + '_' + i)).replace(/[^\w-]/g, '_'), category: a.category === 'defense' ? 'defense' : 'attack', name };
                 if (TIPOS_ACCION.includes(a.tipo)) o.tipo = a.tipo;
+                if ([1, 2, 3].includes(Number(a.puntos))) o.puntos = Number(a.puntos);
                 out.push(o);
             });
             return out;
@@ -1899,21 +1900,22 @@
             autoguardarPartido(true);
         }
 
-        const NOMBRE_PARTE = { 1: '1ª P', 2: '2ª P', 3: 'Prór.' };
+        function nombreParte(n) { const b = window.PARTES_BASE || 2; return n > b ? 'Prór.' : (b === 4 ? n + 'º C' : n + 'ª P'); }
         function pintarParte() {
             const b = document.getElementById('btn-parte');
-            if (b) b.innerText = NOMBRE_PARTE[parte] || (parte + 'ª P');
+            if (b) b.innerText = nombreParte(parte);
         }
 
         function cambiarParte() {
-            if (parte >= 3) { alert('Ya estás en la prórroga.'); return; }
-            const sig = parte + 1;
-            const txt = prompt(`Pasar a ${sig === 2 ? 'la 2ª parte' : 'la prórroga'}. Minuto del reloj en el que empieza:`, sig === 2 ? String(window.PARTE_MIN || 30) : String((window.PARTE_MIN || 30) * 2));
+            const base = window.PARTES_BASE || 2, pm = window.PARTE_MIN || 30;
+            if (parte >= base + 1) { alert('Ya estás en la prórroga.'); return; }
+            const sig = parte + 1, esProrroga = sig > base, nombre = nombreParte(sig);
+            const txt = prompt(`Pasar a ${esProrroga ? 'la prórroga' : nombre}. Minuto del reloj en el que empieza:`, String(esProrroga ? base * pm : (sig - 1) * pm));
             if (txt === null) return;
             const min = parseInt(txt, 10);
             if (!Number.isFinite(min) || min < 0) { alert('Minuto no válido.'); return; }
             if (timerInterval) toggleTimer();
-            crearEvento({ lado: 'home', categoria: 'PARTE', tipo: 'CAMBIO_PARTE', accion: sig === 2 ? 'Inicio 2ª parte' : 'Inicio prórroga', dorsal: '-', jugador: 'Delegado', parteAnterior: parte });
+            crearEvento({ lado: 'home', categoria: 'PARTE', tipo: 'CAMBIO_PARTE', accion: esProrroga ? 'Inicio prórroga' : 'Inicio ' + nombre, dorsal: '-', jugador: 'Delegado', parteAnterior: parte });
             parte = sig;
             eventsLog[0].parte = parte;
             seconds = Math.max(seconds, min * 60);
@@ -1921,7 +1923,7 @@
             actualizarDisplayTiempo();
             pintarParte();
             renderFeed();
-            mostrarToastRapido(`▶ ${sig === 2 ? '2ª parte' : 'Prórroga'}: reloj en ${formatearSegundos(seconds)} (pausado). Toca el reloj para empezar.`, 5000);
+            mostrarToastRapido(`▶ ${esProrroga ? 'Prórroga' : nombre}: reloj en ${formatearSegundos(seconds)} (pausado). Toca el reloj para empezar.`, 5000);
         }
 
         function actualizarMarcador() {
@@ -2579,7 +2581,8 @@
                 ataqueAuto = true;
             }
 
-            if (tipo === 'GOL') homeGoals++;
+            const ptsAccion = tipo === 'GOL' ? ((actions.find(a => a.name === selectedAction) || {}).puntos || 1) : 0;
+            if (tipo === 'GOL') homeGoals += ptsAccion;
             if (tipo === 'EXCLUSION') p.exclusionSeconds = 120;       // 2 minutos fuera, con cuenta atrás
             actualizarMarcador();
 
@@ -2598,7 +2601,7 @@
                 lado: 'home', categoria: categoriaActiva.toUpperCase(), tipo,
                 accion: selectedAction, dorsal: p.number, jugadorId: p.id, jugador: p.name,
                 zonaPorteriaEscrita: zonaPorteria, golX: gX, golY: gY,
-                zonaCampo, campoX: cX, campoY: cY, ataqueAuto, golAuto: auto === true
+                zonaCampo, campoX: cX, campoY: cY, ataqueAuto, golAuto: auto === true, pts: ptsAccion
             });
 
             reiniciarMarcadoresClic();
@@ -2656,7 +2659,7 @@
             let l = 0, r = 0;
             eventsLog.slice().reverse().forEach(e => {
                 if (e.tipo === 'AJUSTE') { l = Number(e.ajusteLocal) || 0; r = Number(e.ajusteRival) || 0; }
-                else { if (e.tipo === 'GOL' && e.lado === 'home') l++; if (e.tipo === 'GOL_ENCAJADO') r++; }
+                else { if (e.tipo === 'GOL' && e.lado === 'home') l += (e.pts || 1); if (e.tipo === 'GOL_ENCAJADO') r += (e.pts || 1); }
                 e.golesLocal = l; e.golesRival = r;
                 e.marcador = `${String(l).padStart(2, '0')} - ${String(r).padStart(2, '0')}`;
             });
@@ -2681,9 +2684,9 @@
             }
 
             if (ev.tipo === 'GOL' && ev.lado === 'home') {
-                if (homeGoals > 0) homeGoals--;
+                homeGoals = Math.max(0, homeGoals - (ev.pts || 1));
             } else if (ev.tipo === 'GOL_ENCAJADO') {
-                if (awayGoals > 0) awayGoals--;
+                awayGoals = Math.max(0, awayGoals - (ev.pts || 1));
             } else if (ev.tipo === 'TIRO_MAPA') {
                 // el tiro del mapa y su evento van siempre unidos
                 for (let i = tirosEx.length - 1; i >= 0; i--) {
@@ -2860,7 +2863,7 @@
            ===================================================================== */
         function aplicarDatosPartido(data) {
             if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }      // al cargar otro partido el reloj no sigue corriendo
-            parte = [1, 2, 3].includes(Number(data.parte)) ? Number(data.parte) : 1;
+            parte = (Number(data.parte) >= 1 && Number(data.parte) <= (window.PARTES_BASE || 2) + 1) ? Number(data.parte) : 1;
             homeName = String(data.homeName || 'LOCAL').slice(0, 40);
             awayName = String(data.awayName || 'RIVAL').slice(0, 40);
             homeGoals = Math.max(0, Number(data.homeGoals) || 0);
@@ -3927,20 +3930,31 @@
             hockey: { nombre: 'Hockey patines', icono: '🏑', exclusion: false, maxTM: 1, parteMin: 25, term: 'Goles',
                 posiciones: [{ n: 'Portero', a: 'POR' }, { n: 'Defensa', a: 'DEF' }, { n: 'Delantero', a: 'DEL' }],
                 acciones: [['attack', 'Gol', 'GOL'], ['attack', 'Asistencia', 'ASISTENCIA'], ['attack', 'Tiro', 'FALLO'], ['attack', 'Pérdida', 'PERDIDA'], ['defense', 'Parada Portero', 'PARADA_PORTERO'], ['defense', 'Recuperación', 'OTRO'], ['defense', 'Falta', 'OTRO']] },
+            baloncesto: { nombre: 'Baloncesto', icono: '🏀', exclusion: false, ubicacion: false, puntosVar: true, partes: 4, maxTM: 2, parteMin: 10, term: 'Puntos',
+                posiciones: [{ n: 'Base', a: 'BAS' }, { n: 'Escolta', a: 'ESC' }, { n: 'Alero', a: 'ALE' }, { n: 'Ala-pívot', a: 'AP' }, { n: 'Pívot', a: 'PIV' }],
+                acciones: [['attack', 'Tiro libre (1 pt)', 'GOL', 1], ['attack', 'Canasta 2 pts', 'GOL', 2], ['attack', 'Triple (3 pts)', 'GOL', 3], ['attack', 'Asistencia', 'ASISTENCIA'], ['attack', 'Fallo de tiro', 'FALLO'], ['attack', 'Pérdida', 'PERDIDA'], ['attack', 'Rebote ofensivo', 'OTRO'], ['defense', 'Rebote defensivo', 'OTRO'], ['defense', 'Robo', 'OTRO'], ['defense', 'Tapón', 'OTRO'], ['defense', 'Falta personal', 'OTRO'], ['defense', 'Falta técnica', 'OTRO'], ['defense', 'Falta antideportiva', 'OTRO']] },
             otro: { nombre: 'Otro deporte', icono: '🏟', exclusion: false, maxTM: 2, parteMin: 20, term: 'Puntos',
                 posiciones: [{ n: 'Jugador', a: 'JUG' }],
                 acciones: [['attack', 'Punto', 'GOL'], ['attack', 'Asistencia', 'ASISTENCIA'], ['attack', 'Fallo', 'FALLO'], ['attack', 'Pérdida', 'PERDIDA'], ['defense', 'Recuperación', 'OTRO'], ['defense', 'Falta', 'OTRO']] }
         };
         const CLAVE_DEPORTE = 'dd_deporte';
+        (function () { try { const d = DEPORTES[localStorage.getItem(CLAVE_DEPORTE)]; if (d) { window.PARTES_BASE = d.partes || 2; window.PARTE_MIN = d.parteMin; } } catch (e) {} })();
 
         function deporteActual() { const k = leerCrudo(CLAVE_DEPORTE); return DEPORTES[k] ? k : null; }
 
+        function anotarRival(n) {
+            awayGoals += n; actualizarMarcador();
+            crearEvento({ lado: 'away', categoria: 'EN_CONTRA', tipo: 'GOL_ENCAJADO', accion: 'Puntos rival +' + n, dorsal: '-', jugador: 'Rival', zonaPorteriaEscrita: '-', pts: n });
+            renderFeed();
+        }
+
         function pintarDeporte(k) {
             const d = DEPORTES[k]; if (!d) return;
-            window.PARTE_MIN = d.parteMin;
-            const ubi = document.getElementById('txt-title-ubicacion'); if (ubi) { const p = ubi.closest('.panel'); if (p) p.style.display = (k === 'otro') ? 'none' : ''; }
+            window.PARTE_MIN = d.parteMin; window.PARTES_BASE = d.partes || 2;
+            const ubi = document.getElementById('txt-title-ubicacion'); if (ubi) { const p = ubi.closest('.panel'); if (p) p.style.display = (k === 'otro' || d.ubicacion === false) ? 'none' : ''; }
             const ex = document.getElementById('btn-excl-rival-main'); if (ex) ex.style.display = d.exclusion ? '' : 'none';
             const bg = document.getElementById('btn-gol-rival-main'); if (bg && !leerJSON('dd_etiquetas_textos', {})['btn-gol-rival-main']) bg.firstChild.textContent = (d.term === 'Puntos' ? '⚽ PUNTO RIVAL' : '⚽ GOL RIVAL');
+            if (bg) { if (d.puntosVar) { bg.firstChild.textContent = '🏀 PUNTOS RIVAL'; bg.onclick = function () { const n = parseInt(prompt('Puntos anotados por el rival (1, 2 o 3):', '2'), 10); if ([1, 2, 3].includes(n)) anotarRival(n); }; } else { bg.onclick = null; bg.setAttribute('onclick', 'abrirModalGolRival()'); } }
             const lg = document.getElementById('lbl-stat-goles'); if (lg && !leerJSON('dd_etiquetas_textos', {})['lbl-stat-goles']) lg.textContent = d.term + ' a favor';
             const b = document.getElementById('btn-deporte'); if (b) b.textContent = d.icono + ' ' + d.nombre;
         }
@@ -3949,7 +3963,7 @@
             const d = DEPORTES[k]; if (!d) return;
             try { localStorage.setItem(CLAVE_DEPORTE, k); } catch (e) {}
             if (reiniciarConfig) {
-                actions = sanearAcciones(d.acciones.map((a, i) => ({ id: 'p' + i, category: a[0], name: a[1], tipo: a[2] })));
+                actions = sanearAcciones(d.acciones.map((a, i) => ({ id: 'p' + i, category: a[0], name: a[1], tipo: a[2], puntos: a[3] })));
                 posiciones = d.posiciones.map(x => ({ n: x.n, a: x.a }));
                 players.forEach(p => { if (p.posicion && !posiciones.some(x => x.n === p.posicion)) p.posicion = ''; });
                 MAX_TIEMPOS_MUERTOS = d.maxTM; timeoutsHome = d.maxTM; timeoutsAway = d.maxTM;
@@ -3986,6 +4000,115 @@
             const k = deporteActual();
             if (k) pintarDeporte(k); else abrirSelectorDeporte(true);
         });
+    </script>
+    <script>
+        /* =====================================================================
+           MÓDULO BALONCESTO: faltas, bonus, tiempos muertos por mitad, posesión y acta
+           ===================================================================== */
+        (function () {
+            const FALTAS = ['Falta personal', 'Falta técnica', 'Falta antideportiva'];
+            let posesion = '';
+            const esB = () => { try { return localStorage.getItem('dd_deporte') === 'baloncesto'; } catch (e) { return false; } };
+            const evJ = p => eventsLog.filter(e => e.lado === 'home' && e.jugadorId === p.id);
+            const faltasJ = p => evJ(p).filter(e => FALTAS.includes(e.accion)).length;
+            const puntosJ = p => evJ(p).filter(e => e.tipo === 'GOL').reduce((t, e) => t + (e.pts || 1), 0);
+            const faltasEq = (lado, per) => eventsLog.filter(e => e.lado === lado && (e.parte || 1) === per && (lado === 'home' ? FALTAS.includes(e.accion) : e.accion === 'Falta rival')).length;
+
+            function refrescar() {
+                const pn = document.getElementById('panel-basket'); if (!pn) return;
+                if (!esB()) { pn.style.display = 'none'; return; }
+                pn.style.display = 'flex';
+                const fh = faltasEq('home', parte), fa = faltasEq('away', parte);
+                document.getElementById('bk-faltas').innerHTML = `Faltas ${nombreParte(parte)}: <b>${escaparHTML(homeName)} ${fh}</b>${fh >= 5 ? ' <span style="color:#ef4444">⚠ BONUS rival</span>' : ''} · <b>${escaparHTML(awayName)} ${fa}</b>${fa >= 5 ? ' <span style="color:#ef4444">⚠ BONUS local</span>' : ''}`;
+                document.getElementById('bk-pos').textContent = '➡ Posesión: ' + (posesion === 'home' ? homeName : posesion === 'away' ? awayName : '–');
+            }
+
+            function decorar() {
+                if (!esB()) return;
+                document.querySelectorAll('.player-card[data-pid]').forEach(c => {
+                    const p = players.find(x => String(x.id) === c.getAttribute('data-pid')); if (!p) return;
+                    const n = faltasJ(p), d = document.createElement('div');
+                    d.style.cssText = 'font-weight:800;font-size:.8rem;margin-top:2px;color:' + (n >= 5 ? '#ef4444' : n >= 4 ? '#f59e0b' : '#94a3b8');
+                    d.textContent = 'PTS ' + puntosJ(p) + ' · F ' + n + (n >= 5 ? ' ⛔' : '');
+                    const inf = c.querySelector('.player-info'); if (inf) inf.appendChild(d);
+                    if (n >= 5) c.style.opacity = '.55';
+                });
+            }
+
+            function faltaRival() {
+                crearEvento({ lado: 'away', categoria: 'FALTA', tipo: 'OTRO', accion: 'Falta rival', dorsal: '-', jugador: 'Rival' });
+                renderFeed(); autoguardarPartido();
+            }
+
+            function acta() {
+                const base = 4, np = Math.max(parte, base);
+                const ql = {}, qr = {};
+                eventsLog.forEach(e => { const q = e.parte || 1; if (e.tipo === 'GOL' && e.lado === 'home') ql[q] = (ql[q] || 0) + (e.pts || 1); if (e.tipo === 'GOL_ENCAJADO') qr[q] = (qr[q] || 0) + (e.pts || 1); });
+                let cab = '', fl = '', fr = '', pl = '', pr = '';
+                for (let q = 1; q <= np; q++) { cab += `<th>${nombreParte(q)}</th>`; pl += `<td>${ql[q] || 0}</td>`; pr += `<td>${qr[q] || 0}</td>`; fl += `<td>${faltasEq('home', q)}</td>`; fr += `<td>${faltasEq('away', q)}</td>`; }
+                const filas = players.filter(p => !p.inactivo && !p.oculto).map(p => {
+                    const ev = evJ(p), c = f => ev.filter(f).length, g = n => c(e => e.tipo === 'GOL' && (e.pts || 1) === n);
+                    return `<tr><td>${escaparHTML(p.number)}</td><td style="text-align:left">${escaparHTML(p.name)}</td><td><b>${g(1) + 2 * g(2) + 3 * g(3)}</b></td><td>${g(1)}</td><td>${g(2)}</td><td>${g(3)}</td><td>${c(e => e.tipo === 'ASISTENCIA')}</td><td>${c(e => /^Rebote/.test(e.accion))}</td><td>${c(e => e.accion === 'Robo')}</td><td>${c(e => e.accion === 'Tapón')}</td><td>${c(e => e.tipo === 'PERDIDA')}</td><td>${c(e => FALTAS.includes(e.accion))}</td><td>${formatearSegundos(p.totalSeconds || 0)}</td></tr>`;
+                }).join('');
+                const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Acta de baloncesto</title><style>body{font-family:Arial,sans-serif;margin:18px;color:#111}h1{font-size:20px;margin:0 0 4px}table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}th,td{border:1px solid #999;padding:4px 6px;text-align:center}th{background:#eee}.big{font-size:26px;font-weight:bold}@media print{.np{display:none}}</style></head><body>
+                <button class="np" onclick="window.print()" style="padding:8px 14px;margin-bottom:10px">🖨 Imprimir / Guardar como PDF</button>
+                <h1>Acta de baloncesto · ${new Date().toLocaleDateString('es-ES')}</h1>
+                <div class="big">${escaparHTML(homeName)} ${homeGoals} - ${awayGoals} ${escaparHTML(awayName)}</div>
+                <table><tr><th></th>${cab}</tr><tr><td>${escaparHTML(homeName)} (puntos)</td>${pl}</tr><tr><td>${escaparHTML(awayName)} (puntos)</td>${pr}</tr><tr><td>${escaparHTML(homeName)} (faltas)</td>${fl}</tr><tr><td>${escaparHTML(awayName)} (faltas)</td>${fr}</tr></table>
+                <table><tr><th>Nº</th><th>Jugador</th><th>PTS</th><th>TL</th><th>T2</th><th>T3</th><th>AST</th><th>REB</th><th>ROB</th><th>TAP</th><th>PÉR</th><th>FAL</th><th>MIN</th></tr>${filas}</table></body></html>`;
+                const w = window.open('', '_blank');
+                if (!w) { alert('El navegador bloqueó la ventana. Permite las ventanas emergentes para esta web.'); return; }
+                w.document.write(html); w.document.close();
+            }
+
+            /* Envolver funciones existentes (sin tocar su código) */
+            const oFeed = renderFeed; renderFeed = function () { const r = oFeed.apply(this, arguments); try { refrescar(); } catch (e) {} return r; };
+            const oRos = renderRoster; renderRoster = function () { const r = oRos.apply(this, arguments); try { decorar(); } catch (e) {} return r; };
+            const oPint = pintarDeporte; pintarDeporte = function () { const r = oPint.apply(this, arguments); try { refrescar(); } catch (e) {} return r; };
+            const oReg = registerEvent;
+            registerEvent = function () {
+                const pid = selectedPlayerId, acc = selectedAction, antes = eventsLog.length;
+                const r = oReg.apply(this, arguments);
+                try {
+                    if (esB() && FALTAS.includes(acc) && eventsLog.length > antes) {
+                        const p = players.find(x => x.id === pid);
+                        if (p) {
+                            const n = faltasJ(p);
+                            if (n >= 5) { p.onField = false; renderRoster(); alert(`⛔ #${p.number} ${p.name} acumula ${n} faltas: DESCALIFICADO. Debe ser sustituido.`); }
+                            else if (n === 4) alert(`⚠ #${p.number} ${p.name} lleva 4 faltas.`);
+                        }
+                    }
+                } catch (e) {}
+                return r;
+            };
+            const oPar = cambiarParte;
+            cambiarParte = function () {
+                const antes = parte, r = oPar.apply(this, arguments);
+                try {
+                    if (esB() && parte !== antes && (parte === 3 || parte === 5)) {   // 2ª mitad: 3 tiempos muertos; prórroga: 1
+                        MAX_TIEMPOS_MUERTOS = parte === 3 ? 3 : 1; timeoutsHome = MAX_TIEMPOS_MUERTOS; timeoutsAway = MAX_TIEMPOS_MUERTOS;
+                        actualizarTimeoutsUI(); autoguardarPartido();
+                    }
+                } catch (e) {}
+                return r;
+            };
+
+            window.addEventListener('DOMContentLoaded', () => {
+                const h = document.querySelector('header'); if (!h) return;
+                const pn = document.createElement('div'); pn.id = 'panel-basket';
+                pn.style.cssText = 'display:none;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;padding:6px 10px;background:var(--panel-bg);border-bottom:1px solid var(--accent-gold);font-size:.9rem;color:#e2e8f0;';
+                pn.innerHTML = '<span id="bk-faltas"></span><button class="btn" id="bk-fr">Falta RIVAL</button><button class="btn" id="bk-pos"></button><button class="btn" id="bk-acta">📋 Acta / PDF</button>';
+                h.insertAdjacentElement('afterend', pn);
+                document.getElementById('bk-fr').onclick = faltaRival;
+                document.getElementById('bk-pos').onclick = () => { posesion = posesion === '' ? 'home' : posesion === 'home' ? 'away' : ''; refrescar(); };
+                document.getElementById('bk-acta').onclick = acta;
+                if (esB()) {                    // al recuperar un partido: tiempos muertos máximos según la mitad
+                    MAX_TIEMPOS_MUERTOS = parte >= 5 ? 1 : parte >= 3 ? 3 : 2;
+                    actualizarTimeoutsUI(); renderRoster();
+                }
+                refrescar();
+            });
+        })();
     </script>
     <script>
         /* PWA + robustez en pista: instalación, offline, pantalla encendida y datos persistentes */
