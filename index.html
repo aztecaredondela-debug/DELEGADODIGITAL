@@ -3927,9 +3927,9 @@
             futsal: { nombre: 'Fútbol sala', icono: '⚽', exclusion: false, maxTM: 1, parteMin: 20, term: 'Goles',
                 posiciones: [{ n: 'Portero', a: 'POR' }, { n: 'Cierre', a: 'CIE' }, { n: 'Ala Izquierdo', a: 'AI' }, { n: 'Ala Derecho', a: 'AD' }, { n: 'Pívot', a: 'PIV' }],
                 acciones: [['attack', 'Gol', 'GOL'], ['attack', 'Asistencia', 'ASISTENCIA'], ['attack', 'Tiro a puerta', 'FALLO'], ['attack', 'Tiro fuera', 'FALLO'], ['attack', 'Pérdida', 'PERDIDA'], ['defense', 'Parada Portero', 'PARADA_PORTERO'], ['defense', 'Recuperación', 'OTRO'], ['defense', 'Falta', 'OTRO'], ['defense', 'Tarjeta', 'OTRO']] },
-            hockey: { nombre: 'Hockey patines', icono: '🏑', exclusion: false, maxTM: 1, parteMin: 25, term: 'Goles',
+            hockey: { nombre: 'Hockey patines', icono: '🏑', exclusion: true, maxTM: 1, parteMin: 25, term: 'Goles',
                 posiciones: [{ n: 'Portero', a: 'POR' }, { n: 'Defensa', a: 'DEF' }, { n: 'Delantero', a: 'DEL' }],
-                acciones: [['attack', 'Gol', 'GOL'], ['attack', 'Asistencia', 'ASISTENCIA'], ['attack', 'Tiro', 'FALLO'], ['attack', 'Pérdida', 'PERDIDA'], ['defense', 'Parada Portero', 'PARADA_PORTERO'], ['defense', 'Recuperación', 'OTRO'], ['defense', 'Falta', 'OTRO']] },
+                acciones: [['attack', 'Gol', 'GOL'], ['attack', 'Asistencia', 'ASISTENCIA'], ['attack', 'Tiro', 'FALLO'], ['attack', 'Pérdida', 'PERDIDA'], ['defense', 'Parada Portero', 'PARADA_PORTERO'], ['defense', 'Recuperación', 'OTRO'], ['defense', 'Falta', 'OTRO'], ['defense', 'Tarjeta azul (2 min)', 'EXCLUSION']] },
             baloncesto: { nombre: 'Baloncesto', icono: '🏀', exclusion: false, puntosVar: true, partes: 4, maxTM: 2, parteMin: 10, term: 'Puntos',
                 posiciones: [{ n: 'Base', a: 'BAS' }, { n: 'Escolta', a: 'ESC' }, { n: 'Alero', a: 'ALE' }, { n: 'Ala-pívot', a: 'AP' }, { n: 'Pívot', a: 'PIV' }],
                 acciones: [['attack', 'Tiro libre (1 pt)', 'GOL', 1], ['attack', 'Canasta 2 pts', 'GOL', 2], ['attack', 'Triple (3 pts)', 'GOL', 3], ['attack', 'Asistencia', 'ASISTENCIA'], ['attack', 'Fallo de tiro', 'FALLO'], ['attack', 'Pérdida', 'PERDIDA'], ['attack', 'Rebote ofensivo', 'OTRO'], ['defense', 'Rebote defensivo', 'OTRO'], ['defense', 'Robo', 'OTRO'], ['defense', 'Tapón', 'OTRO'], ['defense', 'Falta personal', 'OTRO'], ['defense', 'Falta técnica', 'OTRO'], ['defense', 'Falta antideportiva', 'OTRO']] },
@@ -4186,6 +4186,22 @@
 
             window.addEventListener('DOMContentLoaded', () => { const k = localStorage.getItem('dd_deporte'); if (k) pintarCampoYZonas(k); });
             if (esB()) pintarCampoYZonas('baloncesto');
+        })();
+    </script>
+    <script>
+        /* El botón "2m" de cada jugador solo existe en los deportes con exclusión temporal (balonmano y hockey patines) */
+        (function () {
+            const conExclusion = () => { try { const d = DEPORTES[localStorage.getItem('dd_deporte')]; return !d || !!d.exclusion; } catch (e) { return true; } };
+            function ajustar() {
+                const ver = conExclusion();
+                document.querySelectorAll('.p-btn-exc').forEach(b => { if (b.parentElement) b.parentElement.style.display = ver ? '' : 'none'; });
+            }
+            const oRos = renderRoster; renderRoster = function () { const r = oRos.apply(this, arguments); try { ajustar(); } catch (e) {} return r; };
+            const oPint = pintarDeporte; pintarDeporte = function () { const r = oPint.apply(this, arguments); try { renderRoster(); } catch (e) {} return r; };
+            /* El aviso de "3ª exclusión = descalificación" es regla del balonmano */
+            const oAviso = avisarTerceraExclusion;
+            avisarTerceraExclusion = function () { try { if (localStorage.getItem('dd_deporte') === 'hockey') return; } catch (e) {} return oAviso.apply(this, arguments); };
+            if (!conExclusion()) ajustar();
         })();
     </script>
     <script>
