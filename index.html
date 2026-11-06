@@ -3930,7 +3930,7 @@
             hockey: { nombre: 'Hockey patines', icono: '🏑', exclusion: false, maxTM: 1, parteMin: 25, term: 'Goles',
                 posiciones: [{ n: 'Portero', a: 'POR' }, { n: 'Defensa', a: 'DEF' }, { n: 'Delantero', a: 'DEL' }],
                 acciones: [['attack', 'Gol', 'GOL'], ['attack', 'Asistencia', 'ASISTENCIA'], ['attack', 'Tiro', 'FALLO'], ['attack', 'Pérdida', 'PERDIDA'], ['defense', 'Parada Portero', 'PARADA_PORTERO'], ['defense', 'Recuperación', 'OTRO'], ['defense', 'Falta', 'OTRO']] },
-            baloncesto: { nombre: 'Baloncesto', icono: '🏀', exclusion: false, ubicacion: false, puntosVar: true, partes: 4, maxTM: 2, parteMin: 10, term: 'Puntos',
+            baloncesto: { nombre: 'Baloncesto', icono: '🏀', exclusion: false, puntosVar: true, partes: 4, maxTM: 2, parteMin: 10, term: 'Puntos',
                 posiciones: [{ n: 'Base', a: 'BAS' }, { n: 'Escolta', a: 'ESC' }, { n: 'Alero', a: 'ALE' }, { n: 'Ala-pívot', a: 'AP' }, { n: 'Pívot', a: 'PIV' }],
                 acciones: [['attack', 'Tiro libre (1 pt)', 'GOL', 1], ['attack', 'Canasta 2 pts', 'GOL', 2], ['attack', 'Triple (3 pts)', 'GOL', 3], ['attack', 'Asistencia', 'ASISTENCIA'], ['attack', 'Fallo de tiro', 'FALLO'], ['attack', 'Pérdida', 'PERDIDA'], ['attack', 'Rebote ofensivo', 'OTRO'], ['defense', 'Rebote defensivo', 'OTRO'], ['defense', 'Robo', 'OTRO'], ['defense', 'Tapón', 'OTRO'], ['defense', 'Falta personal', 'OTRO'], ['defense', 'Falta técnica', 'OTRO'], ['defense', 'Falta antideportiva', 'OTRO']] },
             otro: { nombre: 'Otro deporte', icono: '🏟', exclusion: false, maxTM: 2, parteMin: 20, term: 'Puntos',
@@ -4108,6 +4108,84 @@
                 }
                 refrescar();
             });
+        })();
+    </script>
+    <script>
+        /* =====================================================================
+           BALONCESTO: campo propio (sin canasta) a la derecha, zonas de tiro y ubicación solo en campo
+           ===================================================================== */
+        (function () {
+            const esB = () => { try { return localStorage.getItem('dd_deporte') === 'baloncesto'; } catch (e) { return false; } };
+            const ZON_H = ZONAS_TACTICAS.slice(), SEC_H = SECTORES_MAPA.map(o => ({ titulo: o.titulo, claves: o.claves.slice() }));
+            const ZON_B = ['Bajo el aro', 'Pintura', 'Media distancia izquierda', 'Media distancia central', 'Media distancia derecha', 'Triple esquina izquierda', 'Triple ala izquierda', 'Triple frontal', 'Triple ala derecha', 'Triple esquina derecha'];
+            const SEC_B = [
+                { titulo: 'Izquierda', claves: ['Media distancia izquierda', 'Triple esquina izquierda', 'Triple ala izquierda'] },
+                { titulo: 'Central', claves: ['Bajo el aro', 'Pintura', 'Media distancia central', 'Triple frontal'] },
+                { titulo: 'Derecha', claves: ['Media distancia derecha', 'Triple esquina derecha', 'Triple ala derecha'] }];
+
+            function zonaBasket(x, y) {            // aro en (150,22); línea de 6,75 m ≈ radio 135; esquinas en x<18 / x>282
+                x = Number(x); y = Number(y);
+                const dx = x - 150, d = Math.hypot(dx, y - 22);
+                const triple = y < 50 ? (x < 18 || x > 282) : d > 135;
+                if (triple) { if (y < 50) return dx < 0 ? 'Triple esquina izquierda' : 'Triple esquina derecha'; return dx < -45 ? 'Triple ala izquierda' : dx > 45 ? 'Triple ala derecha' : 'Triple frontal'; }
+                if (d <= 24) return 'Bajo el aro';
+                if (x >= 102 && x <= 198 && y <= 84) return 'Pintura';
+                return dx < -50 ? 'Media distancia izquierda' : dx > 50 ? 'Media distancia derecha' : 'Media distancia central';
+            }
+            const oZona = obtenerZonaTacticaCampo;
+            obtenerZonaTacticaCampo = function (x, y) { return esB() ? zonaBasket(x, y) : oZona(x, y); };
+
+            const CAMPO_B = '<g class="bk-court"><rect x="0" y="0" width="300" height="200" fill="#b7791f"/>' +
+                '<rect x="102" y="0" width="96" height="84" fill="#9a3412" stroke="#fff" stroke-width="1.5"/>' +
+                '<path d="M 114 84 A 36 36 0 0 0 186 84" fill="none" stroke="#fff" stroke-width="1.5"/>' +
+                '<path d="M 114 84 A 36 36 0 0 1 186 84" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="4,4"/>' +
+                '<path d="M 18 0 L 18 50 A 135 135 0 0 0 282 50 L 282 0" fill="none" stroke="#fff" stroke-width="1.5"/>' +
+                '<path d="M 134 22 A 16 16 0 0 0 166 22" fill="none" stroke="#fff" stroke-width="1.5"/>' +
+                '<line x1="134" y1="10" x2="166" y2="10" stroke="#fff" stroke-width="2"/>' +
+                '<circle cx="150" cy="22" r="7" fill="none" stroke="#f97316" stroke-width="2.5"/></g>';
+
+            function pintarCampoYZonas(k) {
+                const b = k === 'baloncesto';
+                ZONAS_TACTICAS.splice(0, ZONAS_TACTICAS.length, ...(b ? ZON_B : ZON_H));
+                SECTORES_MAPA.splice(0, SECTORES_MAPA.length, ...(b ? SEC_B : SEC_H).map(o => ({ titulo: o.titulo, claves: o.claves.slice() })));
+                const svg = document.querySelector('.court-svg');
+                if (svg) {
+                    svg.querySelectorAll('.bk-court').forEach(n => n.remove());
+                    Array.from(svg.children).forEach(n => { if (n.id !== 'court-marker') n.style.display = b ? 'none' : ''; });
+                    if (b) svg.insertAdjacentHTML('afterbegin', CAMPO_B);
+                }
+                const ubi = document.getElementById('txt-title-ubicacion'), panel = ubi && ubi.closest('.panel');
+                if (!panel) return;
+                panel.style.display = '';                                     // los botones de registrar y de rival deben verse siempre
+                const vistas = panel.querySelectorAll('.mini-view-container');
+                const conPorteria = ['balonmano', 'futsal', 'hockey'].includes(k), conCampo = k !== 'otro';
+                if (vistas[0]) vistas[0].style.display = conPorteria ? '' : 'none';
+                if (vistas[1]) vistas[1].style.display = conCampo ? '' : 'none';
+                const gb = panel.querySelector('.graphics-box'); if (gb) gb.style.gridTemplateColumns = conPorteria ? '' : '1fr';
+                if (b && !leerJSON('dd_etiquetas_textos', {})['txt-title-ubicacion']) ubi.textContent = 'Ubicación del tiro (campo)';
+                else if (!b && ubi.textContent === 'Ubicación del tiro (campo)') ubi.textContent = 'Ubicación Lanzamiento (Goles)';
+            }
+            const oPint = pintarDeporte;
+            pintarDeporte = function (k) { const r = oPint.apply(this, arguments); try { pintarCampoYZonas(k); } catch (e) { console.warn(e); } return r; };
+
+            /* Ubicación pendiente: en baloncesto solo hay que tocar el campo */
+            const oTxt = textoUbicacion;
+            textoUbicacion = function (ev, c) { return esB() ? `📍 ${escaparHTML(ev.accion)} de #${escaparHTML(ev.dorsal)} ${escaparHTML(ev.jugador)} (${escaparHTML(ev.tiempo)}). Toca el <b>campo</b> para ubicar el tiro.` : oTxt.apply(this, arguments); };
+            const oAUP = aplicarUbicacionPendiente;
+            aplicarUbicacionPendiente = function (goal, court) {
+                if (!esB()) return oAUP.apply(this, arguments);
+                const ev = ubicPendiente ? eventsLog.find(e => e.id === ubicPendiente.id) : null;
+                if (!ev) { ubicPendiente = null; return false; }
+                if (!court) return false;
+                ev.campoX = court.x; ev.campoY = court.y; ev.zonaCampo = obtenerZonaTacticaCampo(court.x, court.y);
+                ubicPendiente = null; renderFeed();
+                if (typeof actualizarVistaMapaEx === 'function') actualizarVistaMapaEx();
+                mostrarToastRapido('✓ Tiro ubicado (' + escaparHTML(ev.zonaCampo) + ')', 2500);
+                return true;
+            };
+
+            window.addEventListener('DOMContentLoaded', () => { const k = localStorage.getItem('dd_deporte'); if (k) pintarCampoYZonas(k); });
+            if (esB()) pintarCampoYZonas('baloncesto');
         })();
     </script>
     <script>
