@@ -1,5 +1,5 @@
 /* Cambia VERSION cada vez que subas una versión nueva para forzar la actualización */
-const VERSION = 'delegado-digital-v4';
+const VERSION = 'delegado-digital-v5';
 const ARCHIVOS = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png'];
 
 self.addEventListener('install', e => {
