@@ -4237,16 +4237,334 @@
         })();
     </script>
     <script>
-        /* Aviso en pantallas pequeñas: la app está pensada para tablet u ordenador */
+        /* =====================================================================
+           CONTROL POR VOZ  (Chrome/Edge/Android: reconocimiento de voz del navegador, necesita internet)
+           Ejemplos:  "gol dorsal 2"  ·  "gol 9 metros dorsal 5 desde lateral derecho portería abajo izquierda"
+                      "pérdida de balón dorsal 7"  ·  "cambio dorsal 2 por 25"  ·  "gol rival portería arriba derecha"
+                      después de un gol sin zona:  "portería abajo derecha"  /  "campo extremo izquierdo"
+                      "deshacer" · "iniciar reloj" / "parar reloj"
+           Las acciones se reconocen por el TEXTO de las tarjetas de acción (también las que crees tú).
+           ===================================================================== */
         (function () {
-            try {
-                if (Math.min(screen.width, screen.height) >= 600 || sessionStorage.getItem('dd_aviso_pantalla')) return;
-                const m = document.createElement('div');
-                m.style.cssText = 'position:fixed;inset:0;z-index:100000;background:#090d16;color:#e2e8f0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;font-family:sans-serif;';
-                m.innerHTML = '<div style="font-size:3rem">📱➜🖥</div><h2 style="margin:0;color:#22c55e">Pantalla demasiado pequeña</h2><p style="max-width:420px;margin:0;line-height:1.5">Delegado Digital está pensado para usarse en una <b>tablet u ordenador</b>. En un móvil los botones y paneles no se ven bien.</p><button id="dd-seguir" style="padding:12px 18px;border-radius:8px;border:1px solid #22c55e;background:transparent;color:#22c55e;font-size:1rem">Continuar de todos modos</button>';
-                document.body.appendChild(m);
-                document.getElementById('dd-seguir').onclick = function () { try { sessionStorage.setItem('dd_aviso_pantalla', '1'); } catch (e) {} m.remove(); };
-            } catch (e) {}
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const NUM = { cero:0, uno:1, un:1, dos:2, tres:3, cuatro:4, cinco:5, seis:6, siete:7, ocho:8, nueve:9, diez:10, once:11, doce:12, trece:13, catorce:14, quince:15,
+                dieciseis:16, diecisiete:17, dieciocho:18, diecinueve:19, veinte:20, veintiuno:21, veintiun:21, veintidos:22, veintitres:23, veinticuatro:24, veinticinco:25,
+                veintiseis:26, veintisiete:27, veintiocho:28, veintinueve:29, treinta:30, cuarenta:40, cincuenta:50, sesenta:60, setenta:70, ochenta:80, noventa:90 };
+            const RELLENO = /^(de|del|el|la|al|los|las|por favor)$/;
+
+            function norm(t) {
+                let s = String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9ñ ]/g, ' ').replace(/\s+/g, ' ').trim();
+                const tk = s.split(' '), out = [];
+                for (let i = 0; i < tk.length; i++) {
+                    const w = tk[i];
+                    if (w in NUM) {
+                        let v = NUM[w];
+                        if (v >= 30 && v % 10 === 0 && tk[i + 1] === 'y' && NUM[tk[i + 2]] >= 1 && NUM[tk[i + 2]] <= 9) { v += NUM[tk[i + 2]]; i += 2; }
+                        out.push(String(v));
+                    } else if (!RELLENO.test(w)) out.push(w);
+                }
+                return out.join(' ').replace(/\b(\d+) ?(metros|metro|m)\b/g, '$1m');
+            }
+            const tiene = (s, frase) => (' ' + s + ' ').includes(' ' + frase + ' ');
+
+            /* ---------- Acciones: frases a partir del texto de cada tarjeta ---------- */
+            const CLAVE_ALIAS = 'dd_voz_alias';
+            const leerAlias = () => { try { return JSON.parse(localStorage.getItem(CLAVE_ALIAS) || '{}'); } catch (e) { return {}; } };
+            function frasesDeAccion(a) {
+                const base = String(a.name || '').replace(/\(.*?\)/g, ' ');
+                const f = new Set([norm(base)]);
+                base.split('/').forEach(x => f.add(norm(x)));
+                (leerAlias()[a.name] || []).forEach(x => f.add(norm(x)));       // otras formas de decirla, definidas por el usuario
+                return [...f].filter(x => x);
+            }
+            const stem = w => w.length > 3 ? w.replace(/(es|s)$/, '') : w;
+            function casi(a, b) {                                              // tolera 1 letra de error del reconocedor (palabras de 5+ letras)
+                if (a === b) return true;
+                if (a.length < 5 || Math.abs(a.length - b.length) > 1) return false;
+                let i = 0; while (i < a.length && a[i] === b[i]) i++;
+                if (a.length === b.length) return a.slice(i + 1) === b.slice(i + 1);
+                const l = a.length > b.length ? a : b, c = a.length > b.length ? b : a;
+                return l.slice(i + 1) === c.slice(i);
+            }
+            /* Una acción coincide si TODAS las palabras de su etiqueta aparecen en la frase (en cualquier orden, singular/plural) */
+            function buscarAccion(s) {
+                const ut = s.split(' '), us = ut.map(stem); let mejor = null;
+                actions.forEach(a => frasesDeAccion(a).forEach(fr => {
+                    const toks = fr.split(' ').map(stem), usados = [];
+                    const ok = toks.every(t => { const j = us.findIndex((u, k) => !usados.includes(k) && casi(u, t)); if (j < 0) return false; usados.push(j); return true; });
+                    if (ok && (!mejor || toks.length > mejor.n)) mejor = { a, n: toks.length, usados };
+                }));
+                if (!mejor) return null;
+                mejor.resto = ut.filter((_, k) => !mejor.usados.includes(k)).join(' ');
+                return mejor;
+            }
+            function editarFrasesVoz() {
+                const al = leerAlias();
+                const lista = actions.map((a, i) => `${i + 1}. ${a.name}${al[a.name] ? '  → ' + al[a.name].join(', ') : ''}`).join('\n');
+                const n = parseInt(prompt('¿Qué acción quieres poder decir de otra forma?\n(Ya se entiende diciendo el texto de la tarjeta.)\n\n' + lista + '\n\nEscribe el número:'), 10);
+                const a = actions[n - 1]; if (!a) return;
+                const t = prompt(`Otras formas de decir "${a.name}" (separadas por comas):`, (al[a.name] || []).join(', '));
+                if (t === null) return;
+                const v = t.split(',').map(x => x.trim()).filter(Boolean);
+                if (v.length) al[a.name] = v; else delete al[a.name];
+                try { localStorage.setItem(CLAVE_ALIAS, JSON.stringify(al)); } catch (e) {}
+                aviso('✓ Frases guardadas para ' + a.name, true);
+            }
+            const ALIAS = [   // si no coincide con ninguna tarjeta, se busca por tipo
+                ['PERDIDA', ['perdida balon', 'perdida', 'pierde', 'pasos', 'dobles']],
+                ['ASISTENCIA', ['asistencia', 'pase de gol']],
+                ['PARADA_PORTERO', ['parada portero', 'paradon', 'parada']],
+                ['EXCLUSION', ['exclusion', 'dos minutos', '2 minutos', 'tarjeta azul']],
+                ['FALLO', ['fallo', 'falla', 'fuera', 'poste', 'bloqueo', 'parada', 'tiro']],
+                ['GOL', ['gol', 'goles', 'canasta', 'punto']]
+            ];
+
+            /* ---------- Zonas ---------- */
+            const CAMPO = [   // [frases, x, y] sobre el minicampo 300x200 (la portería está arriba)
+                [['extremo izquierdo'], 25, 35], [['extremo derecho'], 275, 35],
+                [['lateral izquierdo'], 90, 50], [['lateral derecho'], 210, 50],
+                [['pivote', 'central 6m', 'centro 6m'], 150, 60],
+                [['9m izquierda', '9m izquierdo'], 60, 110], [['9m central', '9m centro'], 150, 125], [['9m derecha', '9m derecho'], 240, 110],
+                [['lejana', 'lejos', 'distancia lejana', '10m'], 150, 170]
+            ];
+            function parseCampo(s, accion) {
+                for (const [frs, x, y] of CAMPO) if (frs.some(f => tiene(s, f))) return { x, y };
+                const dcha = /\b(derecha|derecho)\b/.test(s), izda = /\b(izquierda|izquierdo)\b/.test(s), cen = /\b(central|centro)\b/.test(s);
+                const nueve = /9m|10m/.test(s) || /9m/.test(norm(accion || ''));
+                if (dcha !== izda) return dcha ? (nueve ? { x: 240, y: 110 } : { x: 210, y: 50 }) : (nueve ? { x: 60, y: 110 } : { x: 90, y: 50 });
+                if (cen) return nueve ? { x: 150, y: 125 } : { x: 150, y: 60 };
+                return null;
+            }
+            function parsePorteria(s) {   // se habla desde el lanzador; la app guarda la etiqueta del portero (espejo): izq. del lanzador = "Derecha"
+                const fila = /\b(arriba|superior|alto|alta|escuadra)\b/.test(s) ? 'Superior' : /\b(abajo|inferior|bajo|baja|raso|rasa|suelo)\b/.test(s) ? 'Inferior' : /\b(medio|media|mitad)\b/.test(s) ? 'Media' : null;
+                const col = /\b(derecha|derecho)\b/.test(s) ? 'Derecha' : /\b(izquierda|izquierdo)\b/.test(s) ? 'Izquierda' : /\b(centro|central|medio|media)\b/.test(s) ? 'Centro' : null;
+                if (!fila && !col) return null;
+                const f = fila || 'Media', c = col || 'Centro';
+                const x = c === 'Izquierda' ? 53 : c === 'Centro' ? 150 : 247, y = f === 'Superior' ? 50 : f === 'Media' ? 110 : 170;
+                return { x, y, hablado: f + ' ' + c, nombre: traducirZonaCoordsEspejo(x, y) };
+            }
+            function separarZonas(s, accion) {
+                let campoTxt = '', porTxt = '';
+                const m = s.match(/\b(porteria|entra|puerta)\b/);
+                if (m) { campoTxt = s.slice(0, m.index); porTxt = s.slice(m.index + m[0].length); }
+                else if (/\bdesde\b/.test(s)) campoTxt = s.slice(s.indexOf('desde') + 5);
+                else if (/\b(arriba|abajo|superior|inferior|raso|escuadra)\b/.test(s)) porTxt = s;
+                else campoTxt = s;
+                const idx = campoTxt.indexOf('desde'); if (idx >= 0) campoTxt = campoTxt.slice(idx + 5);
+                return { campo: campoTxt.trim() ? parseCampo(campoTxt, accion) : null, porteria: porTxt.trim() ? parsePorteria(porTxt) : null };
+            }
+
+            /* ---------- Cambios: "cambio 2 por 25", "sale el 2 entra el 25", "entra 25 por 2", varios seguidos, o uno solo ("sale 7") ---------- */
+            function parseCambios(s) {
+                const hayPalabra = /\b(cambio|cambios|sustitucion|sustituciones|relevo)\b/.test(s);
+                const sueltos = /\b(sale|salen|baja|bajan|entra|entran|sube|suben)\s*(?:dorsal\s*)?\d+/.test(s);
+                if (!hayPalabra && !sueltos) return null;
+                const trozos = hayPalabra ? s.split(/\b(?:cambio|cambios|sustitucion|sustituciones|relevo)\b/).map(x => x.trim()).filter(Boolean) : [s];
+                const lista = [];
+                for (const t of trozos) {
+                    const nums = (t.match(/\b\d+\b(?!m)/g) || []);
+                    if (nums.length >= 2 && nums.length % 2 === 0) { for (let i = 0; i < nums.length; i += 2) lista.push({ a: nums[i], b: nums[i + 1] }); }
+                    else if (nums.length === 1) lista.push({ a: nums[0], dir: /\b(sale|salen|baja|bajan|banquillo)\b/.test(t) ? 'sale' : /\b(entra|entran|sube|suben|pista)\b/.test(t) ? 'entra' : null });
+                    else if (nums.length) return { error: 'Cambio: no entendí los dorsales' };
+                }
+                return lista.length ? { cmd: 'cambios', lista } : { error: 'Cambio: di “cambio dorsal X por Y”' };
+            }
+
+            /* ---------- Nombres de jugador: "sale Pedro entra Juan", "gol Pedro" (se convierten al dorsal) ---------- */
+            const GENERICAS = new Set(['jugador', 'suplente', 'portero', 'dorsal', 'numero', 'gol', 'cambio', 'sale', 'entra', 'rival', 'porteria', 'campo', 'desde', 'banquillo', 'pista', 'cambios']);
+            function sustituirNombres(s) {
+                const ut = s.split(' '), pa = new Set();
+                actions.forEach(a => frasesDeAccion(a).forEach(f => f.split(' ').forEach(w => pa.add(stem(w)))));
+                const info = players.filter(p => !p.inactivo && !p.oculto).map(p => ({ p, toks: norm(p.name).split(' ').filter(w => w.length >= 3 && !/\d/.test(w) && !GENERICAS.has(w) && !pa.has(stem(w))) })).filter(x => x.toks.length);
+                if (!info.length) return { s };
+                const out = []; let amb = null;
+                const coincide = (x, w) => w && x.toks.some(t => casi(w, t));
+                for (let i = 0; i < ut.length; i++) {
+                    const w = ut[i]; let cand = info.filter(x => coincide(x, w));
+                    if (!cand.length) { out.push(w); continue; }
+                    let salto = 0;
+                    if (cand.length > 1) { const c2 = cand.filter(x => coincide(x, ut[i + 1])); if (c2.length === 1) { cand = c2; salto = 1; } }
+                    else if (coincide(cand[0], ut[i + 1]) && !casi(ut[i + 1], w)) salto = 1;       // nombre + apellido
+                    if (cand.length > 1) { amb = w; out.push(w); continue; }
+                    out.push('dorsal', String(cand[0].p.number)); i += salto;
+                }
+                return amb ? { error: `Hay varios jugadores con “${amb}”: di nombre y apellido o el dorsal` } : { s: out.join(' ') };
+            }
+
+            /* ---------- Interpretación de una frase ---------- */
+            function interpretar(texto) {
+                let s = norm(texto);
+                if (!s) return null;
+                const sn = sustituirNombres(s); if (sn.error) return { error: sn.error }; s = sn.s;
+                if (/^(deshacer|deshaz|borra eso|borrar|anula|anular|atras)\b/.test(s)) return { cmd: 'deshacer' };
+                if (/\btiempo muerto\b/.test(s)) return { cmd: 'tiempoMuerto', lado: /\brival\b/.test(s) ? 'away' : 'home' };
+                if (/\bexclusion\b.*\brival\b|\brival\b.*\bexclusion\b/.test(s)) { const d = s.match(/\b(?:dorsal|numero|jugador|provocada|provoca)\s*(?:por\s*)?(?:dorsal\s*)?(\d+)/) || s.match(/\b(\d+)\b/); return { cmd: 'exclRival', dorsal: d ? d[1] : null }; }
+                if (/\b(inicio|inicia|iniciar|empieza|empezar|comienza|comenzar|termina|acaba|fin|final)\b.*\bataque\b/.test(s)) return { cmd: 'ataque', abrir: !/\b(fin|final|termina|acaba)\b/.test(s) };
+                if (/\b(fin|final|termina|terminado|acabado|acaba)\b.*\bpartido\b/.test(s) || /^(fin|final)$/.test(s)) return { cmd: 'finPartido' };
+                if (/\b(descanso|medio tiempo)\b/.test(s) || (/\b(fin|final|termina)\b/.test(s) && /\b(parte|tiempo|mitad|cuarto)\b/.test(s))) return { cmd: 'parar', nota: 'Descanso / fin de parte' };
+                if (/\b(segunda|segundo|tercera|tercer|cuarta|cuarto|prorroga)\b/.test(s) && /\b(parte|tiempo|mitad|cuarto|prorroga)\b/.test(s)) {
+                    const n = /prorroga/.test(s) ? 99 : /\b(cuarta|cuarto)\b.*\b(parte|cuarto)\b|^cuarto$/.test(s) ? 4 : /\b(tercera|tercer)\b/.test(s) ? 3 : 2;
+                    return { cmd: 'parte', n, arrancar: !/\b(descanso|fin|final)\b/.test(s) };
+                }
+                if (/\b(inicio|inicia|iniciar|empieza|empezamos|empezar|comienza|comenzamos|comienzo|arranca|arrancamos|arrancar|reanuda|reanudar|reanudamos|continua|continuamos|seguimos|juego)\b/.test(s) && (/\b(partido|reloj|cronometro|tiempo|juego|parte)\b/.test(s) || /^(arranca|empieza|comienza|inicia|reanuda|continua|juego)$/.test(s))) return { cmd: 'iniciar' };
+                if (/\b(para|parar|paramos|pausa|pausar|parado|detener|stop)\b/.test(s) && (/\b(reloj|cronometro|partido|tiempo|juego)\b/.test(s) || /^(para|pausa|stop)$/.test(s))) return { cmd: 'parar', nota: 'Reloj parado' };
+                const cambios = parseCambios(s);
+                if (cambios) return cambios;
+                if (/\brival\b/.test(s) && /\b(gol|goles|punto|puntos|canasta|triple)\b/.test(s)) {
+                    const z = separarZonas(s.replace(/\brival\b/, ' '), ''); const n = s.match(/\b([123])\b/);
+                    return { cmd: 'golRival', porteria: z.porteria, campo: z.campo, puntos: /triple/.test(s) ? 3 : /libre/.test(s) ? 1 : n ? +n[1] : 2 };
+                }
+                let ac = buscarAccion(s), resto = ac ? ac.resto : s, tipoAlias = null;
+                if (!ac) for (const [tipo, frs] of ALIAS) { const f = frs.find(x => tiene(s, x)); if (f) { tipoAlias = tipo; resto = (' ' + s + ' ').replace(' ' + f + ' ', ' ').trim(); break; } }
+                const dm = resto.match(/\b(?:dorsal|numero|jugador)\s*(\d+)\b/) || resto.match(/\b(\d+)\b(?!m)/);
+                const dorsal = dm ? dm[1] : null;
+                const zonas = separarZonas(resto.replace(/\b(dorsal|numero|jugador)\s*\d+\b/, ' '), ac && ac.a.name);
+                if (!ac && !tipoAlias) {
+                    if (zonas.campo || zonas.porteria) return { cmd: 'ubicar', campo: zonas.campo, porteria: zonas.porteria };
+                    return { error: 'No entendí la acción' };
+                }
+                return { cmd: 'accion', accion: ac ? ac.a : null, tipoAlias, dorsal, campo: zonas.campo, porteria: zonas.porteria };
+            }
+
+            /* ---------- Ejecución ---------- */
+            function sinDialogos(fn) {       // la voz no puede contestar a ventanas de confirmar/preguntar: se aceptan los valores por defecto
+                const c = window.confirm, p = window.prompt, al = window.alert;
+                window.confirm = () => true; window.prompt = (m, d) => d == null ? '' : String(d); window.alert = m => mostrarToastRapido(escaparHTML(String(m)), 4000);
+                try { return fn(); } finally { window.confirm = c; window.prompt = p; window.alert = al; }
+            }
+            const jugadorPorDorsal = d => players.find(p => String(p.number) === String(d) && !p.inactivo && !p.oculto);
+            function elegirAccion(r, jug) {
+                if (r.accion && !(tipoDeAccion(r.accion.name) === 'FALLO' && jug && /port/i.test(jug.posicion || '') && /parada/.test(norm(r.accion.name)) && actions.some(a => tipoDeAccion(a.name) === 'PARADA_PORTERO'))) return r.accion;
+                const tipo = r.tipoAlias || (r.accion && tipoDeAccion(r.accion.name));
+                if (tipo === 'GOL' || (r.accion && tipoDeAccion(r.accion.name) === 'GOL' && r.campo)) {
+                    const gs = actions.filter(a => tipoDeAccion(a.name) === 'GOL');
+                    if (r.campo) {
+                        const zona = obtenerZonaTacticaCampo(r.campo.x, r.campo.y);
+                        const pat = /\(6m\)/.test(zona) ? /6\s*m/i : /9m|10m/.test(zona) ? /9\s*m/i : null;
+                        const g = pat && gs.find(a => pat.test(a.name)); if (g) return g;
+                    }
+                    return gs.find(a => !/7\s*m|contra/i.test(a.name)) || gs[0] || null;
+                }
+                if (r.accion) return r.accion;
+                const cand = actions.filter(a => tipoDeAccion(a.name) === tipo);
+                return cand[0] || null;
+            }
+
+            function ejecutar(r) {
+                if (r.error) return aviso('⚠ ' + r.error, false);
+                if (r.cmd === 'deshacer') { deshacerUltimo(); return aviso('↩ Deshecho', true); }
+                if (r.cmd === 'iniciar') { if (timerInterval) return aviso('▶ El reloj ya está en marcha', true); toggleTimer(); return aviso('▶ Reloj en marcha', true); }
+                if (r.cmd === 'parar') { if (timerInterval) toggleTimer(); return aviso('⏸ ' + (r.nota || 'Reloj parado'), true); }
+                if (r.cmd === 'finPartido') { if (timerInterval) toggleTimer(); try { autoguardarPartido(true); } catch (e) {} return aviso('🏁 Fin de partido: reloj parado y partido guardado', true); }
+                if (r.cmd === 'parte') {
+                    const max = (window.PARTES_BASE || 2) + 1, n = Math.min(r.n, max);
+                    if (timerInterval) toggleTimer();
+                    if (parte >= n && parte >= max) return aviso('⚠ Ya estás en la última parte', false);
+                    while (parte < n) { const antes = parte; sinDialogos(cambiarParte); if (parte === antes) break; }
+                    if (r.arrancar && !timerInterval) toggleTimer();
+                    return aviso('▶ ' + nombreParte(parte) + (timerInterval ? ': reloj en marcha' : ''), true);
+                }
+                if (r.cmd === 'ataque') {
+                    if (r.abrir === ataqueEnCurso) return aviso(ataqueEnCurso ? '⚔ El ataque ya está en curso' : '⚔ No hay ataque en curso', true);
+                    registrarInicioAtaque(); return aviso(ataqueEnCurso ? '⚔ Ataque iniciado' : '⚔ Ataque finalizado', true);
+                }
+                if (r.cmd === 'tiempoMuerto') { sinDialogos(() => pedirTiempoMuerto(r.lado)); return aviso('⏱ Tiempo muerto ' + (r.lado === 'home' ? 'local' : 'rival'), true); }
+                if (r.cmd === 'exclRival') {
+                    const q = r.dorsal ? jugadorPorDorsal(r.dorsal) : null;
+                    registrarExclusionRival(q ? q.id : null);
+                    return aviso('🟨 Exclusión rival' + (q ? ' provocada por #' + q.number : ''), true);
+                }
+                if (r.cmd === 'cambios') {
+                    const res = [];
+                    for (const c of r.lista) {
+                        const a = jugadorPorDorsal(c.a);
+                        if (!a) { res.push(`⚠ no existe el dorsal ${c.a}`); continue; }
+                        if (c.b === undefined) {
+                            if (!c.dir) { res.push(`⚠ #${a.number}: ¿sale o entra?`); continue; }
+                            if ((c.dir === 'sale') !== a.onField) { res.push(`⚠ #${a.number} ya está en ${a.onField ? 'pista' : 'banquillo'}`); continue; }
+                            cambioPendienteId = null; alternarEstadoSimple(a); res.push(`#${a.number} ${c.dir === 'sale' ? 'sale' : 'entra'}`); continue;
+                        }
+                        const b = jugadorPorDorsal(c.b);
+                        if (!b) { res.push(`⚠ no existe el dorsal ${c.b}`); continue; }
+                        if (a.onField === b.onField) { res.push(`⚠ #${a.number} y #${b.number} están los dos en ${a.onField ? 'pista' : 'banquillo'}`); continue; }
+                        cambioPendienteId = null; intercambiarJugadores(a, b);        // sale el que está en pista, entra el del banquillo (da igual el orden en que lo digas)
+                        res.push(`sale #${a.onField ? b.number : a.number} · entra #${a.onField ? a.number : b.number}`);
+                    }
+                    return aviso('🔄 ' + res.join(' | '), !res.some(x => x.startsWith('⚠')));
+                }
+                if (r.cmd === 'golRival') {
+                    if (deporteActual() === 'baloncesto') { anotarRival(r.puntos); return aviso(`✓ Rival +${r.puntos}`, true); }
+                    if (r.campo) { courtCoords = { x: r.campo.x, y: r.campo.y }; }
+                    guardarGolRivalConZona(r.porteria ? r.porteria.nombre : '-');
+                    return aviso('✓ Gol rival' + (r.porteria ? ' · ' + r.porteria.hablado : ''), true);
+                }
+                if (r.cmd === 'ubicar') {
+                    const ev = eventsLog.find(e => e.lado === 'home' && (e.tipo === 'GOL' || e.tipo === 'FALLO'));
+                    if (!ubicPendiente) { if (!ev) return aviso('⚠ No hay acción que ubicar', false); ubicarEventoExistente(ev.id); }
+                    aplicarUbicacionPendiente(r.porteria ? { x: r.porteria.x, y: r.porteria.y } : null, r.campo);
+                    return true;
+                }
+                if (r.cmd === 'accion') {
+                    const jug = r.dorsal ? jugadorPorDorsal(r.dorsal) : players.find(p => p.id === selectedPlayerId);
+                    if (r.dorsal && !jug) return aviso(`⚠ No encuentro el dorsal ${r.dorsal}`, false);
+                    if (!jug) return aviso('⚠ Di el dorsal: “… dorsal 7”', false);
+                    const acc = elegirAccion(r, jug);
+                    if (!acc) return aviso('⚠ No tienes ninguna tarjeta de esa acción (créala con ➕ y se podrá decir)', false);
+                    selectedPlayerId = jug.id; selectedAction = acc.name;
+                    reiniciarMarcadoresClic();
+                    if (r.campo && !/baloncesto/.test(deporteActual() || '')) { courtCoords = { x: r.campo.x, y: r.campo.y }; }
+                    if (r.porteria) goalCoords = { x: r.porteria.x, y: r.porteria.y };
+                    renderRoster(); renderActions();
+                    sinDialogos(() => registerEvent());
+                    reiniciarMarcadoresClic();
+                    return aviso(`✓ ${acc.name} · #${jug.number}${jug.onField ? '' : ' (¡está en banquillo!)'}${r.campo ? ' · campo ' + obtenerZonaTacticaCampo(r.campo.x, r.campo.y) : ''}${r.porteria ? ' · ' + r.porteria.hablado : ''}`, true, true);
+                }
+                return false;
+            }
+
+            /* ---------- Interfaz y reconocimiento ---------- */
+            let rec = null, activo = false, ultimaFrase = '', ultimaT = 0;
+            function aviso(msg, ok, silencioToast) {
+                const b = document.getElementById('voz-barra');
+                if (b) { b.querySelector('.res').textContent = msg; b.style.borderColor = ok ? '#22c55e' : '#ef4444'; }
+                if (!silencioToast) mostrarToastRapido(escaparHTML(msg), 2500);
+                return ok;
+            }
+            function pintar(escuchando) {
+                const btn = document.getElementById('btn-voz'), b = document.getElementById('voz-barra');
+                if (btn) { btn.textContent = activo ? '🎤 Voz: ON' : '🎤 Voz: OFF'; btn.classList.toggle('activo', activo); }
+                if (b) { b.style.display = activo ? 'flex' : 'none'; b.querySelector('.est').textContent = escuchando ? '🔴 Escuchando…' : '… reconectando'; }
+            }
+            function procesar(texto) {
+                const t = Date.now(), s = norm(texto);
+                if (s === ultimaFrase && t - ultimaT < 2500) return;     // evita duplicados del reconocedor
+                ultimaFrase = s; ultimaT = t;
+                const b = document.getElementById('voz-barra'); if (b) b.querySelector('.oido').textContent = '“' + texto.trim() + '”';
+                try { ejecutar(interpretar(texto) || { error: 'No entendí' }); } catch (e) { console.error(e); aviso('⚠ Error: ' + e.message, false); }
+            }
+            function crear() {
+                rec = new SR(); rec.lang = 'es-ES'; rec.continuous = true; rec.interimResults = false; rec.maxAlternatives = 1;
+                rec.onstart = () => pintar(true);
+                rec.onresult = ev => { for (let i = ev.resultIndex; i < ev.results.length; i++) if (ev.results[i].isFinal) procesar(ev.results[i][0].transcript); };
+                rec.onerror = ev => { if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') { activo = false; alert('El navegador no tiene permiso para usar el micrófono.'); } };
+                rec.onend = () => { pintar(false); if (activo) setTimeout(() => { try { rec.start(); } catch (e) {} }, 300); else pintar(false); };
+            }
+            function alternarVoz() {
+                if (!SR) { alert('Este navegador no permite reconocimiento de voz. Usa Chrome (Android u ordenador) o Edge.'); return; }
+                activo = !activo;
+                if (activo) { if (!rec) crear(); try { rec.start(); } catch (e) {} } else { try { rec.stop(); } catch (e) {} }
+                pintar(activo);
+            }
+            window.DDVoz = { interpretar, norm, alternarVoz };
+
+            window.addEventListener('DOMContentLoaded', () => {
+                const barra = document.querySelector('.top-actions');
+                if (barra) { const b = document.createElement('button'); b.className = 'btn btn-gold'; b.id = 'btn-voz'; b.textContent = '🎤 Voz: OFF'; b.title = 'Registrar acciones hablando'; b.onclick = alternarVoz; barra.insertBefore(b, barra.firstChild); const f = document.createElement('button'); f.className = 'btn btn-gold'; f.textContent = '🗣 Frases'; f.title = 'Enseñar otras formas de decir cada acción'; f.onclick = editarFrasesVoz; barra.insertBefore(f, b.nextSibling); }
+                const p = document.createElement('div'); p.id = 'voz-barra';
+                p.style.cssText = 'display:none;position:fixed;left:8px;bottom:8px;z-index:9998;max-width:92vw;gap:8px;align-items:center;flex-wrap:wrap;background:var(--panel-bg);color:#e2e8f0;border:2px solid #22c55e;border-radius:10px;padding:6px 10px;font-size:.85rem;';
+                p.innerHTML = '<b class="est"></b><span class="oido" style="opacity:.8"></span><span class="res" style="font-weight:700"></span>';
+                document.body.appendChild(p);
+            });
         })();
     </script>
 </body>
