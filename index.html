@@ -4268,6 +4268,20 @@
             const tiene = (s, frase) => (' ' + s + ' ').includes(' ' + frase + ' ');
 
             /* ---------- Acciones: frases a partir del texto de cada tarjeta ---------- */
+            /* Sinónimos: distintas formas de decir lo mismo se reducen a una palabra (en lo que dices y en el texto de tus tarjetas) */
+            const GRUPOS = [
+                ['gol', 'goles', 'golazo', 'golazos', 'marca', 'marcan', 'marcado', 'anota', 'anotan', 'anotado', 'mete', 'metido', 'tanto'],
+                ['perdida', 'perdidas', 'pierde', 'pierden', 'perdido', 'perdio', 'perdimos'],
+                ['fallo', 'fallos', 'falla', 'fallan', 'fallado', 'erra', 'errado'],
+                ['asistencia', 'asistencias', 'asiste', 'asisten', 'asistido'],
+                ['recuperacion', 'recuperaciones', 'recupera', 'recuperado', 'roba', 'robado', 'robo', 'intercepta', 'interceptado', 'interceptacion'],
+                ['exclusion', 'exclusiones', 'excluido', 'excluyen', 'sancion', 'sancionado', 'suspension'],
+                ['parada', 'paradas', 'paradon', 'parado', 'detiene', 'detenido', 'ataja', 'atajado'],
+                ['falta', 'faltas', 'infraccion']
+            ];
+            const CANON = {}; GRUPOS.forEach(g => g.forEach(w => { CANON[w] = g[0]; }));
+            const canonTok = w => CANON[w] || w;
+            const canon = t => t.split(' ').map(canonTok).join(' ');
             const CLAVE_ALIAS = 'dd_voz_alias';
             const leerAlias = () => { try { return JSON.parse(localStorage.getItem(CLAVE_ALIAS) || '{}'); } catch (e) { return {}; } };
             function frasesDeAccion(a) {
@@ -4286,14 +4300,23 @@
                 const l = a.length > b.length ? a : b, c = a.length > b.length ? b : a;
                 return l.slice(i + 1) === c.slice(i);
             }
-            /* Una acción coincide si TODAS las palabras de su etiqueta aparecen en la frase (en cualquier orden, singular/plural) */
+            /* Una acción coincide si TODAS las palabras de su etiqueta aparecen en la frase (en cualquier orden, singular/plural, sinónimos).
+               Si no hay coincidencia total, vale la parcial cuando solo una acción encaja (p. ej. dices "pase" y solo hay "Pase fallido") */
             function buscarAccion(s) {
-                const ut = s.split(' '), us = ut.map(stem); let mejor = null;
+                const ut = s.split(' '), us = ut.map(w => stem(canonTok(w)));
+                let mejor = null, parcial = null, empate = false;
                 actions.forEach(a => frasesDeAccion(a).forEach(fr => {
-                    const toks = fr.split(' ').map(stem), usados = [];
-                    const ok = toks.every(t => { const j = us.findIndex((u, k) => !usados.includes(k) && casi(u, t)); if (j < 0) return false; usados.push(j); return true; });
-                    if (ok && (!mejor || toks.length > mejor.n)) mejor = { a, n: toks.length, usados };
+                    const toks = fr.split(' ').map(w => stem(canonTok(w))), usados = [];
+                    let hay = 0;
+                    toks.forEach(t => { const j = us.findIndex((u, k) => !usados.includes(k) && casi(u, t)); if (j >= 0) { usados.push(j); if (!/\d/.test(t)) hay++; } });
+                    if (usados.length === toks.length) { if (!mejor || toks.length > mejor.n) mejor = { a, n: toks.length, usados }; }
+                    else if (hay >= 1 && usados.length * 2 >= toks.length) {
+                        const sc = usados.length / toks.length;
+                        if (!parcial || sc > parcial.sc || (sc === parcial.sc && usados.length > parcial.usados.length)) { parcial = { a, n: toks.length, usados, sc }; empate = false; }
+                        else if (sc === parcial.sc && usados.length === parcial.usados.length && a !== parcial.a) empate = true;
+                    }
                 }));
+                if (!mejor && parcial && !empate) mejor = parcial;
                 if (!mejor) return null;
                 mejor.resto = ut.filter((_, k) => !mejor.usados.includes(k)).join(' ');
                 return mejor;
@@ -4318,6 +4341,8 @@
                 ['FALLO', ['fallo', 'falla', 'fuera', 'poste', 'bloqueo', 'parada', 'tiro']],
                 ['GOL', ['gol', 'goles', 'canasta', 'punto']]
             ];
+
+            ALIAS.forEach(x => { x[1] = x[1].map(f => canon(norm(f))); });
 
             /* ---------- Zonas ---------- */
             const CAMPO = [   // [frases, x, y] sobre el minicampo 300x200 (la portería está arriba)
@@ -4344,13 +4369,24 @@
                 return { x, y, hablado: f + ' ' + c, nombre: traducirZonaCoordsEspejo(x, y) };
             }
             function separarZonas(s, accion) {
-                let campoTxt = '', porTxt = '';
-                const m = s.match(/\b(porteria|entra|puerta)\b/);
-                if (m) { campoTxt = s.slice(0, m.index); porTxt = s.slice(m.index + m[0].length); }
-                else if (/\bdesde\b/.test(s)) campoTxt = s.slice(s.indexOf('desde') + 5);
-                else if (/\b(arriba|abajo|superior|inferior|raso|escuadra)\b/.test(s)) porTxt = s;
-                else campoTxt = s;
-                const idx = campoTxt.indexOf('desde'); if (idx >= 0) campoTxt = campoTxt.slice(idx + 5);
+                s = s.replace(/\b(banda|ala)\s+(izquierda|izquierdo|derecha|derecho)\b/g, 'extremo $2').replace(/\b(extremo|lateral)\s+derecha\b/g, '$1 derecho').replace(/\b(extremo|lateral)\s+izquierda\b/g, '$1 izquierdo');
+                const tk = s.split(' ');
+                const seg = { campo: [], por: [], libre: [] }; let cur = 'libre';
+                tk.forEach(w => {
+                    if (w === 'desde') cur = 'campo';
+                    else if (/^(porteria|puerta|entra|portero)$/.test(w)) cur = 'por';
+                    else seg[cur].push(w);
+                });
+                let campoTxt = seg.campo.join(' '), porTxt = seg.por.join(' '), libre = seg.libre.join(' ');
+                // palabras que solo pueden ser de campo, estén donde estén
+                let m;
+                while ((m = libre.match(/\b(?:extremo|lateral)\s+(?:izquierdo|izquierda|derecho|derecha)\b|\b(?:pivote|lejana|lejos)\b|\b\d+m\b/))) { campoTxt += ' ' + m[0]; libre = libre.replace(m[0], ' '); }
+                libre = libre.replace(/\s+/g, ' ').trim();
+                if (libre) {
+                    if (/\b(arriba|abajo|superior|inferior|raso|rasa|escuadra|alto|alta|bajo|baja|medio|media|suelo)\b/.test(libre) || (porTxt && !parsePorteria(porTxt))) porTxt += ' ' + libre;
+                    else if (!campoTxt.trim() || !parseCampo(campoTxt, accion)) campoTxt += ' ' + libre;
+                    else porTxt += ' ' + libre;      // el campo ya está claro: la dirección que sobra es de la portería
+                }
                 return { campo: campoTxt.trim() ? parseCampo(campoTxt, accion) : null, porteria: porTxt.trim() ? parsePorteria(porTxt) : null };
             }
 
@@ -4395,7 +4431,7 @@
             function interpretar(texto) {
                 let s = norm(texto);
                 if (!s) return null;
-                const sn = sustituirNombres(s); if (sn.error) return { error: sn.error }; s = sn.s;
+                const sn = sustituirNombres(s); if (sn.error) return { error: sn.error }; s = canon(sn.s);
                 if (/^(deshacer|deshaz|borra eso|borrar|anula|anular|atras)\b/.test(s)) return { cmd: 'deshacer' };
                 if (/\btiempo muerto\b/.test(s)) return { cmd: 'tiempoMuerto', lado: /\brival\b/.test(s) ? 'away' : 'home' };
                 if (/\bexclusion\b.*\brival\b|\brival\b.*\bexclusion\b/.test(s)) { const d = s.match(/\b(?:dorsal|numero|jugador|provocada|provoca)\s*(?:por\s*)?(?:dorsal\s*)?(\d+)/) || s.match(/\b(\d+)\b/); return { cmd: 'exclRival', dorsal: d ? d[1] : null }; }
