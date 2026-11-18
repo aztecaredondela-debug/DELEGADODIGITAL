@@ -4399,7 +4399,12 @@
                 if (/^(deshacer|deshaz|borra eso|borrar|anula|anular|atras)\b/.test(s)) return { cmd: 'deshacer' };
                 if (/\btiempo muerto\b/.test(s)) return { cmd: 'tiempoMuerto', lado: /\brival\b/.test(s) ? 'away' : 'home' };
                 if (/\bexclusion\b.*\brival\b|\brival\b.*\bexclusion\b/.test(s)) { const d = s.match(/\b(?:dorsal|numero|jugador|provocada|provoca)\s*(?:por\s*)?(?:dorsal\s*)?(\d+)/) || s.match(/\b(\d+)\b/); return { cmd: 'exclRival', dorsal: d ? d[1] : null }; }
-                if (/\b(inicio|inicia|iniciar|empieza|empezar|comienza|comenzar|termina|acaba|fin|final)\b.*\bataque\b/.test(s)) return { cmd: 'ataque', abrir: !/\b(fin|final|termina|acaba)\b/.test(s) };
+                if (/\bataques?\b/.test(s) && s.split(' ').length <= 6) {
+                    const cierra = /\b(fin|final|finaliza|finalizar|finalizado|finalizada|termina|terminar|terminado|terminada|acaba|acabar|acabado|cierra|cerrar|cerrado|corta|cortar)\b/.test(s);
+                    const abre = /\b(inicio|inicia|iniciar|iniciado|iniciada|empieza|empezar|empezamos|empezado|comienza|comenzar|comienzo|comenzamos|arranca|arrancar|abre|abrir|nuevo|otro)\b/.test(s);
+                    if (cierra || abre) return { cmd: 'ataque', abrir: !cierra };
+                    if (/^ataques?$/.test(s)) return { cmd: 'ataque', alternar: true };
+                }
                 if (/\b(fin|final|termina|terminado|acabado|acaba)\b.*\bpartido\b/.test(s) || /^(fin|final)$/.test(s)) return { cmd: 'finPartido' };
                 if (/\b(descanso|medio tiempo)\b/.test(s) || (/\b(fin|final|termina)\b/.test(s) && /\b(parte|tiempo|mitad|cuarto)\b/.test(s))) return { cmd: 'parar', nota: 'Descanso / fin de parte' };
                 if (/\b(segunda|segundo|tercera|tercer|cuarta|cuarto|prorroga)\b/.test(s) && /\b(parte|tiempo|mitad|cuarto|prorroga)\b/.test(s)) {
@@ -4465,7 +4470,7 @@
                     return aviso('▶ ' + nombreParte(parte) + (timerInterval ? ': reloj en marcha' : ''), true);
                 }
                 if (r.cmd === 'ataque') {
-                    if (r.abrir === ataqueEnCurso) return aviso(ataqueEnCurso ? '⚔ El ataque ya está en curso' : '⚔ No hay ataque en curso', true);
+                    if (!r.alternar && r.abrir === ataqueEnCurso) return aviso(ataqueEnCurso ? '⚔ El ataque ya está en curso' : '⚔ No hay ataque en curso', true);
                     registrarInicioAtaque(); return aviso(ataqueEnCurso ? '⚔ Ataque iniciado' : '⚔ Ataque finalizado', true);
                 }
                 if (r.cmd === 'tiempoMuerto') { sinDialogos(() => pedirTiempoMuerto(r.lado)); return aviso('⏱ Tiempo muerto ' + (r.lado === 'home' ? 'local' : 'rival'), true); }
